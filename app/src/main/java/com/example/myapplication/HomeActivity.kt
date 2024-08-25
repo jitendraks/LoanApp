@@ -3,6 +3,9 @@
 package com.example.myapplication
 
 import android.app.Activity
+import android.app.job.JobInfo
+import android.app.job.JobScheduler
+import android.content.ComponentName
 import android.content.Context
 import android.content.Context.LOCATION_SERVICE
 import android.content.Intent
@@ -10,17 +13,16 @@ import android.content.pm.PackageManager
 import android.location.Location
 import android.location.LocationListener
 import android.location.LocationManager
-
-import android.location.Address
-import android.location.Geocoder
-import android.util.Log
-import java.util.Locale
-
 import android.os.Build
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
+import android.os.PersistableBundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.viewModels
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -41,42 +43,53 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-import androidx.core.content.ContextCompat.getSystemService
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import com.example.myapplication.api.UserRepository
+import com.example.myapplication.data.LoginResponse
 import com.example.myapplication.ui.theme.MyApplicationTheme
+import com.example.myapplication.viewmodel.ChangePasswordViewModel
 import com.example.myapplication.viewmodel.HomeActivityViewModel
 import com.example.myapplication.viewmodel.LoginViewModel
 import com.example.myapplication.viewmodel.NavigationEvent
+import com.example.myapplication.viewmodel.UserDataViewModel
 
+const val EMPLOYEE_TRACKING_JOB: Int = 1
 private const val SHARED_PREFS_NAME = "my_prefs"
 private const val KEY_ATTENDANCE = "attendance"
-private val REQUEST_LOCATION_PERMISSION = 100
+private const val REQUEST_LOCATION_PERMISSION = 100
+private val viewModel: HomeActivityViewModel = HomeActivityViewModel(UserRepository())
+var attendanceOn: Boolean = false
+var runAfterLocationFetch: Runnable? = null
+var userData: LoginResponse? = null
 
 class HomeActivity : ComponentActivity() {
-
-    private val viewModel: HomeActivityViewModel = HomeActivityViewModel()
-    private val loginViewModel: LoginViewModel = LoginViewModel(UserRepository())
-
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        userData = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            intent.getParcelableExtra("USER_DATA", LoginResponse::class.java)
+        } else {
+            intent.getParcelableExtra("USER_DATA")
+        }
+        viewModel.attendanceStatus.value = getSharedPreferences(SHARED_PREFS_NAME, 0).getBoolean(KEY_ATTENDANCE, false)
+
+
         setContent {
             MyApplicationTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
                     DashboardScreen(modifier = Modifier.padding(innerPadding),
-                        viewModel, loginViewModel)
+                        viewModel, this)
                 }
             }
         }
@@ -91,7 +104,7 @@ class HomeActivity : ComponentActivity() {
                 NavigationEvent.NavigateToAssignedApps -> TODO()
                 NavigationEvent.NavigateToChangePassword -> {
                     val intent = Intent(this, ChangePasswordActivity::class.java)
-                    intent.putExtra("EMAIL_ADDRESS", loginViewModel.userData.value?.emailAddress)
+                    intent.putExtra("EMAIL_ADDRESS", userData?.emailAddress)
                     startActivity(intent)
                 }
                 NavigationEvent.NavigateToEmployeeList -> TODO()
@@ -100,12 +113,34 @@ class HomeActivity : ComponentActivity() {
             }
         }
 
-        if (ContextCompat.checkSelfPermission(/* context = */ this, /* permission = */ android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED)
-        {
-            // Request
-            requestLocationPermission(this)
-        } else {
-            fetchLocation(context = this)
+        viewModel.attendanceApiState.observe(this) {
+                event ->
+            Log.e("dddddd", "HomeActivity: onCreate: apiState: observe: event = " + event)
+
+            when (event) {
+                is ChangePasswordViewModel.ApiState.Success -> {
+                    viewModel.isLoading = false
+                    attendanceOn = getSharedPreferences(SHARED_PREFS_NAME, 0).getBoolean(KEY_ATTENDANCE, false)
+                    getSharedPreferences(SHARED_PREFS_NAME, 0).edit().putBoolean(KEY_ATTENDANCE, !attendanceOn).apply()
+                    viewModel.attendanceStatus.value = !attendanceOn
+                }
+                is ChangePasswordViewModel.ApiState.Error -> {
+                    viewModel.isLoading = false
+                    viewModel.errorMessage = "Invalid Credentials"
+                }
+                ChangePasswordViewModel.ApiState.Loading -> { // Update isLoading state here
+                    viewModel.isLoading = true
+                }
+            }
+        }
+
+        viewModel.attendanceStatus.observe(this) {
+            if (it) {
+                scheduleEmployeeTrackingJob(this, userData!!.trackingTime)
+            } else {
+                stopEmployeeTrackingJob(this)
+            }
+
         }
     }
 
@@ -124,17 +159,39 @@ class HomeActivity : ComponentActivity() {
     }
 }
 
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview2() {
-    MyApplicationTheme {
-        Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-            DashboardScreen(
-                modifier = Modifier.padding(innerPadding),
-                HomeActivityViewModel(),
-                LoginViewModel(UserRepository())
-            )
-        }
+fun scheduleEmployeeTrackingJob(context: Context, interval: String) {
+
+    val mins = Integer.valueOf(interval)
+    val extras = PersistableBundle()
+    extras.putString("EMPLOYEE_ID", userData?.employeeId)
+
+    val jobInfo = JobInfo.Builder(EMPLOYEE_TRACKING_JOB, ComponentName(context, TrackingService::class.java))
+        .setPeriodic((mins * 60 * 1000).toLong()) // Schedule every 30 minutes
+        .setRequiredNetworkType(JobInfo.NETWORK_TYPE_ANY)
+        .setPersisted(true) // Keep the job scheduled even if the device reboots
+        .setExtras(extras)
+        .build()
+
+    val jobScheduler = context.getSystemService(Context.JOB_SCHEDULER_SERVICE) as JobScheduler
+    jobScheduler.schedule(jobInfo)
+}
+
+fun stopEmployeeTrackingJob(context: Context) {
+    val jobScheduler = context.getSystemService(Context.JOB_SCHEDULER_SERVICE) as JobScheduler
+    jobScheduler.cancel(EMPLOYEE_TRACKING_JOB)
+}
+
+fun setLocation(location: Location, context: Context) {
+    viewModel.setLocation(location, context)
+}
+
+fun markPresence() {
+    Log.e("dddddd", "HomeActviity: markPresence: userData != null, ${userData != null}")
+    userData?.let {
+        viewModel.markAttendance(
+            employeeId = it.employeeId,
+            email = it.emailAddress,
+            mode = !attendanceOn)
     }
 }
 
@@ -142,75 +199,112 @@ fun GreetingPreview2() {
 fun DashboardScreen(
     modifier: Modifier = Modifier,
     viewModel: HomeActivityViewModel,
-    loginViewModel: LoginViewModel
+    activity: Activity
 ) {
     val context = LocalContext.current
-    val sharedPreferences = remember {
-        context.getSharedPreferences(SHARED_PREFS_NAME, Context.MODE_PRIVATE)
-
-    }
-    val attendanceOn = remember {
-        sharedPreferences.getBoolean(KEY_ATTENDANCE, false)
-    }
 
     val options = listOf("Employee List", "Assigned Applications",
-        "Mark Attendance " + if (attendanceOn) "Off" else "On", "Change Password", "View Target Details")
+        "Mark Attendance " + if (viewModel.attendanceStatus.value == true) "Off" else "On", "Change Password", "View Target Details")
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp)
-    ) {
-        TargetView(modifier = Modifier
-            .fillMaxWidth()
-            .weight(0.3f),
-            monthlyTarget = stringResource(id = R.string.monthly_target,
-                loginViewModel.userData.value?.monthlyTarget ?: 0
-            ),
-            yearlyTarget = stringResource(id = R.string.yearly_target,
-                loginViewModel.userData.value?.yearlyTarget ?: 0
+    Box(modifier = modifier.fillMaxSize()) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp)
+        ) {
+            TargetView(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(0.3f),
+                monthlyTarget = stringResource(
+                    id = R.string.monthly_target,
+                    userData?.monthlyTarget ?: 0
+                ),
+                yearlyTarget = stringResource(
+                    id = R.string.yearly_target,
+                    userData?.yearlyTarget ?: 0
+                )
             )
-        )
 
-        Spacer(modifier = Modifier.height(16.dp))
-        LazyColumn(modifier = Modifier
-            .fillMaxWidth()
-            .weight(0.5f)) {
-            items(options) { item ->
-                Box(
-                    modifier = Modifier.clickable {
-                        // Handle click here
-                        when(item) {
-                            "Employee List" -> {
+            Spacer(modifier = Modifier.height(16.dp))
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(0.5f)
+            ) {
+                items(options) { item ->
+                    Box(
+                        modifier = Modifier.clickable {
+                            // Handle click here
+                            when (item) {
+                                "Employee List" -> {
 
-                            }
-                            "Assigned Applications" -> {
+                                }
 
-                            }
-                            "Mark Attendance" -> {
+                                "Assigned Applications" -> {
 
-                            }
-                            "Change Password" -> {
-                                viewModel.navigateToChangePasswordActivity()
-                            }
-                            "View Target Details" -> {
+                                }
 
+                                "Mark Attendance On" -> {
+                                    runAfterLocationFetch = Runnable {
+                                        markPresence()
+                                    }
+                                    if (ContextCompat.checkSelfPermission(/* context = */ context, /* permission = */
+                                            android.Manifest.permission.ACCESS_FINE_LOCATION
+                                        ) != PackageManager.PERMISSION_GRANTED
+                                    ) {
+                                        // Request
+                                        requestLocationPermission(activity)
+                                    } else {
+                                        fetchLocation(context = activity)
+                                    }
+                                }
+
+                                "Mark Attendance Off" -> {
+                                    runAfterLocationFetch = Runnable {
+                                        markPresence()
+                                    }
+                                    if (ContextCompat.checkSelfPermission(/* context = */ context, /* permission = */
+                                            android.Manifest.permission.ACCESS_FINE_LOCATION
+                                        ) != PackageManager.PERMISSION_GRANTED
+                                    ) {
+                                        // Request
+                                        requestLocationPermission(activity)
+                                    } else {
+                                        fetchLocation(context = activity)
+                                    }
+                                }
+
+                                "Change Password" -> {
+                                    viewModel.navigateToChangePasswordActivity()
+                                }
+
+                                "View Target Details" -> {
+
+                                }
                             }
+                            println("Item clicked: $item")
                         }
-                        println("Item clicked: $item")
+                    ) {
+                        Text(
+                            text = item,
+                            style = MaterialTheme.typography.bodyMedium,
+                            modifier = Modifier.padding(16.dp)
+                        )
+                        HorizontalDivider(
+                            color = Color.Gray,
+                            thickness = 1.dp
+                        )
                     }
-                ) {
-                    Text(text = item,
-                        style = MaterialTheme.typography.bodyMedium,
-                        modifier = Modifier.padding(16.dp))
-                    HorizontalDivider(color = Color.Gray,
-                        thickness = 1.dp)
-                }
 
+                }
             }
+            Spacer(modifier = Modifier.weight(0.1f))
+            // Additional information or actions
         }
-        Spacer(modifier = Modifier.weight(0.1f))
-        // Additional information or actions
+        if (viewModel.isLoading) {
+            ApiProgressBar(modifier = Modifier.align(Alignment.Center))
+        }
     }
 
 }
@@ -251,12 +345,12 @@ fun TargetView(modifier: Modifier, monthlyTarget: String, yearlyTarget: String) 
     }
 }
 
-private fun requestLocationPermission(context: Activity) {
-    if (ContextCompat.checkSelfPermission(context, android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-        ActivityCompat.requestPermissions(context, arrayOf(android.Manifest.permission.ACCESS_FINE_LOCATION), REQUEST_LOCATION_PERMISSION)
+private fun requestLocationPermission(activity: Activity) {
+    if (ContextCompat.checkSelfPermission(activity, android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+        ActivityCompat.requestPermissions(activity, arrayOf(android.Manifest.permission.ACCESS_FINE_LOCATION), REQUEST_LOCATION_PERMISSION)
     } else {
         // Permission already granted
-        fetchLocation(context)
+        fetchLocation(activity)
     }
 }
 
@@ -267,12 +361,12 @@ fun fetchLocation(context: Activity) {
     locationManager = context.getSystemService(LOCATION_SERVICE) as LocationManager
     locationListener = object : LocationListener {
         override fun onLocationChanged(location: Location) {
+            Log.e("dddddd", "HomeActivity: fetchLocation: Got Location = ")
+            Log.e("dddddd", "HomeActivity: fetchLocation:  runAfterLocationFetch != null ${runAfterLocationFetch != null}")
             // Handle the location data here
-            val latitude = location.latitude
-            val longitude = location.longitude
-            val address = getAddressFromLatLng(context, latitude, longitude)
-            // ... do something with the latitude and longitude
-
+            setLocation(location, context)
+            runAfterLocationFetch?.let { Handler(Looper.getMainLooper()).post(it) }
+            locationManager.removeUpdates(locationListener)
         }
 
         override fun onStatusChanged(provider: String, status: Int, extras: Bundle?) {}
@@ -282,30 +376,9 @@ fun fetchLocation(context: Activity) {
 
     if (ActivityCompat.checkSelfPermission(context, android.Manifest.permission.ACCESS_FINE_LOCATION)
         == PackageManager.PERMISSION_GRANTED) {
-        locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0f, locationListener)
-        locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 0f, locationListener)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            locationManager.requestLocationUpdates(LocationManager.FUSED_PROVIDER, 0, 0f, locationListener)
-        }
+        locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 1, 0f, locationListener)
     }
 }
-
-
-fun getAddressFromLatLng(context: Activity, latitude: Double, longitude: Double): String? {
-    val geocoder = Geocoder(context, Locale.getDefault())
-    val addresses: List<Address>? = geocoder.getFromLocation(latitude, longitude, 1)
-
-    if (addresses != null && addresses.isNotEmpty()) {
-        val address = addresses[0]
-        val addressString = address.getAddressLine(0)
-        Log.d("Address", addressString)
-        return addressString
-    } else {
-        Log.e("Address", "Unable to get address from latitude and longitude")
-        return null
-    }
-}
-
 
 enum class DashboardOptions(s: String) {
     EMPLOYEE_LIST("Employee List"),

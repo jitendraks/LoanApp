@@ -6,6 +6,7 @@ import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.viewModels
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -42,6 +43,7 @@ import androidx.lifecycle.ViewModelProvider
 import com.example.myapplication.api.ApiService
 import com.example.myapplication.api.RetrofitInstance
 import com.example.myapplication.api.UserRepository
+import com.example.myapplication.viewmodel.UserDataViewModel
 
 
 class LoginActivity : ComponentActivity() {
@@ -66,6 +68,8 @@ class LoginActivity : ComponentActivity() {
             when (event) {
                 NavigationEvent.NavigateToHome -> {
                     val intent = Intent(this, HomeActivity::class.java)
+                    val sharedViewModel: UserDataViewModel by viewModels()
+                    intent.putExtra("USER_DATA", viewModel.userData.value)
                     startActivity(intent)
                 }
 

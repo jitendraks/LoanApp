@@ -4,6 +4,7 @@ import android.util.Log
 import com.example.myapplication.data.AttendanceRequest
 import com.example.myapplication.data.LoginRequest
 import com.example.myapplication.data.LoginResponse
+import com.example.myapplication.data.TrackingRequest
 
 class UserRepository {
     suspend fun login(loginRequest: LoginRequest): Result<LoginResponse> {
@@ -36,6 +37,20 @@ class UserRepository {
     suspend fun markAttendance(attendanceRequest: AttendanceRequest): Result<Boolean> {
         return try {
             val response = RetrofitInstance.api.employeeAttendance(attendanceRequest)
+            Log.e("dddddd", "UserRepository: updatePassword: response = " + response.isSuccessful)
+            if (response.isSuccessful) {
+                Result.success(true)
+            } else {
+                Result.failure(Exception("Login failed"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun trackEmployee(trackingRequest: TrackingRequest): Result<Boolean> {
+        return try {
+            val response = RetrofitInstance.api.trackEmployee(trackingRequest)
             Log.e("dddddd", "UserRepository: updatePassword: response = " + response.isSuccessful)
             if (response.isSuccessful) {
                 Result.success(true)

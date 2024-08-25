@@ -9,8 +9,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.myapplication.api.UserRepository
 import com.example.myapplication.data.LoginRequest
-import com.example.myapplication.data.LoginResponse
-import com.example.myapplication.viewmodel.LoginViewModel.LoginState
 import kotlinx.coroutines.launch
 
 class ChangePasswordViewModel(private val userRepository: UserRepository) : ViewModel() {
@@ -51,7 +49,7 @@ class ChangePasswordViewModel(private val userRepository: UserRepository) : View
         }
     }
 
-    fun cancelUpdatePassword() {
+    private fun cancelUpdatePassword() {
         navigateBack()
     }
 

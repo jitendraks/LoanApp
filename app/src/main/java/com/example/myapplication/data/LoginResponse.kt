@@ -1,5 +1,11 @@
 package com.example.myapplication.data
 
+import android.os.Parcel
+import android.os.Parcelable
+
+import kotlinx.parcelize.Parcelize
+
+@Parcelize
 data class LoginResponse(
     val userId: String,
     val employeeId: String,
@@ -9,4 +15,4 @@ data class LoginResponse(
     val trackingTime: String,
     val monthlyTarget: Int,
     val yearlyTarget: Int
-)
+) : Parcelable
