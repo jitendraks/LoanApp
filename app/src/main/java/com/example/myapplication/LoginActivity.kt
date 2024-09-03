@@ -68,7 +68,6 @@ class LoginActivity : ComponentActivity() {
             when (event) {
                 NavigationEvent.NavigateToHome -> {
                     val intent = Intent(this, HomeActivity::class.java)
-                    val sharedViewModel: UserDataViewModel by viewModels()
                     intent.putExtra("USER_DATA", viewModel.userData.value)
                     startActivity(intent)
                 }

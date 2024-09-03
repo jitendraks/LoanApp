@@ -39,6 +39,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.myapplication.api.UserRepository
 import com.example.myapplication.ui.theme.MyApplicationTheme
+import com.example.myapplication.viewmodel.ApiState
 import com.example.myapplication.viewmodel.ChangePasswordViewModel
 import com.example.myapplication.viewmodel.LoginViewModel
 import com.example.myapplication.viewmodel.NavigationEvent
@@ -71,15 +72,15 @@ class ChangePasswordActivity : ComponentActivity() {
             Log.e("dddddd", "ChangePasswordActivity: onCreate: apiState: observe: event = " + event)
 
             when (event) {
-                is ChangePasswordViewModel.ApiState.Success -> {
+                is ApiState.Success -> {
                     viewModel.isLoading = false
                     viewModel.navigateBack()
                 }
-                is ChangePasswordViewModel.ApiState.Error -> {
+                is ApiState.Error -> {
                     viewModel.isLoading = false
                     viewModel.errorMessage = "Invalid Credentials"
                 }
-                ChangePasswordViewModel.ApiState.Loading -> { // Update isLoading state here
+                ApiState.Loading -> { // Update isLoading state here
                     viewModel.isLoading = true
                 }
             }

@@ -13,6 +13,10 @@
     <string name="prompt_old_password">Old Password</string>
     <string name="prompt_new_password">New Password</string>
     <string name="change_password">Update</string>
-    <string name="monthly_target">Monthly: \u20B9 %d </string>
-    <string name="yearly_target">Yearly: \u20B9 %d </string>
+    <string name="monthly_target_label">Monthly Target</string>
+    <string name="monthly_target">\u20B9 %d / \u20B9 %d</string>
+    <string name="yearly_target_label">Yearly Target</string>
+    <string name="yearly_target">\u20B9 %d / \u20B9 %d </string>
+    <string name="title_activity_presence">PresenceActivity</string>
+    <string name="title_activity_list_assigned_apps">ListAssignedAppsActivity</string>
 </resources>

@@ -14,5 +14,9 @@ data class LoginResponse(
     val roleName: String,
     val trackingTime: String,
     val monthlyTarget: Int,
-    val yearlyTarget: Int
+    val yearlyTarget: Int,
+    val hodStatus: Boolean,
+    val monthlyAchievedTarget: Int,
+    val achievedTarget: Int,
+    val trackingStatus: Boolean
 ) : Parcelable

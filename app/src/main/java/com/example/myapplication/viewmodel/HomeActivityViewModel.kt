@@ -14,7 +14,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.myapplication.api.UserRepository
 import com.example.myapplication.data.AttendanceRequest
-import com.example.myapplication.viewmodel.ChangePasswordViewModel.ApiState
 import kotlinx.coroutines.launch
 import okhttp3.internal.format
 import java.time.Instant
@@ -30,7 +29,6 @@ class HomeActivityViewModel(private val userRepository: UserRepository) : ViewMo
 
     var isLoading by mutableStateOf(false)
     val attendanceApiState = MutableLiveData<ApiState>()
-    val attendanceStatus = MutableLiveData<Boolean>(false)
     var errorMessage by mutableStateOf<String?>(null)
 
     private var latitude by mutableStateOf("")

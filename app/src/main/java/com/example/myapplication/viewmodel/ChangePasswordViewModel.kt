@@ -52,10 +52,4 @@ class ChangePasswordViewModel(private val userRepository: UserRepository) : View
     private fun cancelUpdatePassword() {
         navigateBack()
     }
-
-    sealed class ApiState {
-        object Loading : ApiState()
-        data class Success(val isSuccess: Boolean) : ApiState()
-        data class Error(val exception: Throwable?) : ApiState()
-    }
 }

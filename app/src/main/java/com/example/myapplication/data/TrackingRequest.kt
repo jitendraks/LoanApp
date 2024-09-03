@@ -5,4 +5,5 @@ data class TrackingRequest(
     val logDate: String,
     val latitude: String,
     val longitude: String,
-    val employeeId: Int)
+    val employeeId: Int,
+    val address: String)
