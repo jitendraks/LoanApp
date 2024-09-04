@@ -1,5 +1,7 @@
 package com.example.myapplication
 
+import android.content.Context
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -13,30 +15,30 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Search
-import androidx.compose.material3.Divider
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults.topAppBarColors
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.myapplication.api.UserRepository
+import com.example.myapplication.data.Constants
 import com.example.myapplication.data.LoginResponse
 import com.example.myapplication.data.PendingApp
 import com.example.myapplication.ui.theme.MyApplicationTheme
@@ -55,7 +57,7 @@ class ListAssignedAppsActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             MyApplicationTheme {
-                ListAssignedAppsScreen(assignedAppsViewModel, Modifier.fillMaxSize(), assignedAppsViewModel.isLoading)
+                ListAssignedAppsScreen(this, assignedAppsViewModel, Modifier.fillMaxSize(), assignedAppsViewModel.isLoading)
             }
         }
 
@@ -75,6 +77,7 @@ class ListAssignedAppsActivity : ComponentActivity() {
             when (event) {
                 is AssignedAppsViewModel.FetchAssignedAppsApiState.Success -> {
                     assignedAppsViewModel.pendingApps.value = event.pendingApp
+                    assignedAppsViewModel.filterData()
                     assignedAppsViewModel.isLoading = false
                 }
 
@@ -95,12 +98,32 @@ class ListAssignedAppsActivity : ComponentActivity() {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ListAssignedAppsScreen(assignedAppsViewModel: AssignedAppsViewModel, modifier: Modifier, isLoading: Boolean) {
-    var searchQuery by remember { mutableStateOf("") }
+fun ListAssignedAppsScreen(
+    context: Context,
+    assignedAppsViewModel: AssignedAppsViewModel,
+    modifier: Modifier,
+    isLoading: Boolean) {
 
     Scaffold(topBar = {
         TopAppBar(
-            title = { },
+            title = {
+                BasicTextField(
+                    value = assignedAppsViewModel.searchQuery ?: "",
+                    onValueChange = { newQuery ->
+                        assignedAppsViewModel.searchQuery = newQuery
+                        assignedAppsViewModel.filterData()
+                    },
+                    singleLine = true,
+                    decorationBox = { innerTextField ->
+                        Row {
+                            if (assignedAppsViewModel.searchQuery.isEmpty()) {
+                                Text("Search...", color = Color.Gray)
+                            }
+                            innerTextField()
+                        }
+                    }
+                )
+            },
             colors = topAppBarColors(
                 containerColor = Color.Blue, // Set your desired background color here
                 titleContentColor = Color.White,
@@ -114,54 +137,44 @@ fun ListAssignedAppsScreen(assignedAppsViewModel: AssignedAppsViewModel, modifie
                 }
             },
             actions = {
-                SearchView()
+                IconButton(onClick = {
+                    assignedAppsViewModel.isLoading = true
+                    assignedAppsViewModel.fetchAssignedApps(userData.employeeId.toInt())
+                }) {
+                    Icon(
+                        imageVector = Icons.Filled.Refresh,
+                        contentDescription = "Refresh"
+                    )
+                }
             }
         )
     }, content = {
             innerPadding ->
         AssignedAppsList(
+            context,
             modifier = Modifier.padding(innerPadding),
             assignedAppsViewModel,
-            assignedAppsViewModel.isLoading
+            assignedAppsViewModel.isLoading,
         )
     })
 }
 
 @Composable
-fun SearchView() {
-    var isExpanded by remember { mutableStateOf(false) }
-    var searchQuery by remember { mutableStateOf("") }
-
-    if (isExpanded) {
-        TextField(
-            value = searchQuery,
-            onValueChange = { newQuery -> searchQuery = newQuery },
-            leadingIcon = { Icon(Icons.Filled.Search, contentDescription = "Search") },
-            modifier = Modifier.fillMaxWidth()
-        )
-    } else {
-        IconButton(onClick = { isExpanded = true }) {
-            Icon(Icons.Filled.Search, contentDescription = "Search")
-        }
-    }
-}
-
-@Composable
 fun AssignedAppsList(
+    context: Context,
     modifier: Modifier,
     assignedAppsViewModel: AssignedAppsViewModel,
     loading: Boolean
 ) {
+    val itemList by assignedAppsViewModel.filteredResults.observeAsState(initial = emptyList())
     Box(modifier = modifier.fillMaxSize()) {
         LazyColumn {
-            assignedAppsViewModel.pendingApps.value?.let {
-                items(it) { item ->
-                    ItemRow(item)
-                    HorizontalDivider(
-                        color = Color.Gray,
-                        thickness = 1.dp
-                    )
-                }
+            items(itemList) { item ->
+                ItemRow(item)
+                HorizontalDivider(
+                    color = Color.Gray,
+                    thickness = 1.dp
+                )
             }
         }
         if (loading) {
@@ -173,23 +186,31 @@ fun AssignedAppsList(
 @Composable
 fun ItemRow(item: PendingApp) {
     Column(modifier = Modifier.padding(16.dp)) {
-        item.lanNo?.let { Text(text = it, modifier = Modifier.padding(start = 16.dp)) }
+        val context = LocalContext.current
+
+        Text(text = item.caseNo, modifier = Modifier.padding(start = 16.dp))
         Row(modifier = Modifier
             .fillMaxWidth()
             .padding(16.dp)) {
-            item.borrowerName?.let { Text(text = it, modifier = Modifier.align(Alignment.CenterVertically)) }
+            Text(text = item.borrowerName, modifier = Modifier.align(Alignment.CenterVertically))
             Spacer(modifier = Modifier.weight(1f))
             item.loanAmount?.let { Text(text = it, modifier = Modifier.align(Alignment.CenterVertically)) }
         }
+        Row(modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp)) {
+            item.posAfterSale?.let { Text(text = it, modifier = Modifier.align(Alignment.CenterVertically)) }
+            Spacer(modifier = Modifier.weight(1f))
+            TextButton(onClick = {
+                    val intent = Intent(context, FeedbackActivity::class.java)
+                    intent.putExtra(Constants.LOAN_APP, item)
+                    context.startActivity(intent)
+                },
+                modifier = Modifier.align(Alignment.CenterVertically)) {
+                Text(text = "Submit Feedback")
+            }
+        }
     }
-}
-
-@Composable
-fun Greeting2(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hello $name!",
-        modifier = modifier
-    )
 }
 
 @Preview(showBackground = true)
@@ -201,14 +222,14 @@ fun GreetingPreview3() =
         borrowerName = "djfdifjdf nfdijfd",
         loanDetailId = 0,
         caseType = null,
-        caseNo = null,
+        caseNo = "775656565",
         cbsLoanNo = null,
         customerId = null,
         stateName = null,
         branch = null,
         hubName= null,
         fatherName = null,
-        borrowerAddress = null,
+        borrowerAddress = "Durgapura, Jaipur",
         borrowerContactNo = null,
         coBorrowerName = null,
         coBorrowerAddress = null,

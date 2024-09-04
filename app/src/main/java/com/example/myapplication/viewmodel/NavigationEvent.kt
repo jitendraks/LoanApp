@@ -9,4 +9,5 @@ sealed class NavigationEvent {
     object NavigateToEmployeeList : NavigationEvent()
     object NavigateToAssignedApps : NavigationEvent()
     object NavigateToViewTarget : NavigationEvent()
+    object NavigateToCaptureActivity : NavigationEvent()
 }

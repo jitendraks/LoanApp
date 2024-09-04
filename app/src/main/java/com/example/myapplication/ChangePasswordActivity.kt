@@ -38,6 +38,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.myapplication.api.UserRepository
+import com.example.myapplication.data.Constants
 import com.example.myapplication.ui.theme.MyApplicationTheme
 import com.example.myapplication.viewmodel.ApiState
 import com.example.myapplication.viewmodel.ChangePasswordViewModel
@@ -55,7 +56,7 @@ class ChangePasswordActivity : ComponentActivity() {
                 ChangePasswordScreen(viewModel = viewModel)
             }
         }
-        viewModel.emailAddress = intent.getStringExtra("EMAIL_ADDRESS").toString()
+        viewModel.emailAddress = intent.getStringExtra(Constants.EMAIL_ADDRESS).toString()
         viewModel.navigationEvent.observe(this)
         { event ->
             when (event) {

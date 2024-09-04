@@ -53,6 +53,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.example.myapplication.api.UserRepository
+import com.example.myapplication.data.Constants
 import com.example.myapplication.data.LoginResponse
 import com.example.myapplication.ui.theme.MyApplicationTheme
 import com.example.myapplication.utils.DateTimeFormatter
@@ -83,7 +84,7 @@ class PresenceActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        userData = intent.getParcelableExtra("USER_DATA")!!
+        userData = intent.getParcelableExtra(Constants.USER_DATA)!!
 
         enableEdgeToEdge()
         setContent {
@@ -142,7 +143,7 @@ class PresenceActivity : ComponentActivity() {
                     } else if(TextUtils.isEmpty(presenceResponse.endTime)) {
                         // Start the location service
                         val intent = Intent(this, LocationService::class.java)
-                        intent.putExtra("USER_DATA", userData)
+                        intent.putExtra(Constants.USER_DATA, userData)
                         startService(intent)
 
                         getLocation(this) { location: Location, address: String ->

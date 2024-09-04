@@ -1,18 +1,22 @@
 package com.example.myapplication.data
 
+import android.os.Parcelable
+import kotlinx.parcelize.Parcelize
+
+@Parcelize
 data class PendingApp(
     val loanDetailId: Int,
     val caseType: String?,
-    val caseNo: String?,
+    val caseNo: String,
     val lanNo: String?,
     val cbsLoanNo: String?,
     val customerId: String?,
     val stateName: String?,
     val branch: String?,
     val hubName: String?,
-    val borrowerName: String?,
+    val borrowerName: String,
     val fatherName: String?,
-    val borrowerAddress: String?,
+    val borrowerAddress: String,
     val borrowerContactNo: String?,
     val coBorrowerName: String?,
     val coBorrowerAddress: String?,
@@ -48,4 +52,4 @@ data class PendingApp(
     val repaymentMode: String?,
     val referenceName: String?,
     val contactNo: String?
-)
+) : Parcelable

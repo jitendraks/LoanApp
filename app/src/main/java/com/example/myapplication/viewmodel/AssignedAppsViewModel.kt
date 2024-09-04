@@ -20,8 +20,9 @@ class AssignedAppsViewModel(private val userRepository: UserRepository) : ViewMo
     var errorMessage by mutableStateOf<String?>(null)
 
     val fetchAssignedAppsApiState = MutableLiveData<FetchAssignedAppsApiState>()
-    var pendingApps: MutableLiveData<List<PendingApp>> = MutableLiveData(null)
-
+    var pendingApps: MutableLiveData<List<PendingApp>> = MutableLiveData(emptyList())
+    var filteredResults: MutableLiveData<List<PendingApp>> = MutableLiveData(emptyList())
+    var searchQuery by mutableStateOf<String>("")
     fun navigateBack() {
         _navigationEvent.value = NavigationEvent.NavigateBack
     }
@@ -40,6 +41,16 @@ class AssignedAppsViewModel(private val userRepository: UserRepository) : ViewMo
                 FetchAssignedAppsApiState.Error(result.exceptionOrNull())
             }
         }
+    }
+
+    fun filterData() {
+        val result = pendingApps.value?.filter { item ->
+            // Replace with your actual field names and filtering logic
+            item.borrowerName.contains(searchQuery, ignoreCase = true) ||
+                    item.borrowerAddress.contains(searchQuery, ignoreCase = true) ||
+                    item.caseNo.contains(searchQuery, ignoreCase = true)
+        }
+        filteredResults.value = result ?: emptyList()
     }
 
     sealed class FetchAssignedAppsApiState {

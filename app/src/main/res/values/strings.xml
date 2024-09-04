@@ -19,4 +19,5 @@
     <string name="yearly_target">\u20B9 %d / \u20B9 %d </string>
     <string name="title_activity_presence">PresenceActivity</string>
     <string name="title_activity_list_assigned_apps">ListAssignedAppsActivity</string>
+    <string name="title_activity_feedback">FeedbackActivity</string>
 </resources>

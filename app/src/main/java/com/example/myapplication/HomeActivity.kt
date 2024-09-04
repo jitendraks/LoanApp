@@ -34,8 +34,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
 import com.example.myapplication.api.UserRepository
+import com.example.myapplication.data.Constants
 import com.example.myapplication.data.LoginResponse
 import com.example.myapplication.ui.theme.MyApplicationTheme
 import com.example.myapplication.viewmodel.HomeActivityViewModel
@@ -49,7 +51,7 @@ class HomeActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        userData = intent.getParcelableExtra("USER_DATA")!!
+        userData = intent.getParcelableExtra(Constants.USER_DATA)!!
 
         setContent {
             MyApplicationTheme {
@@ -68,16 +70,13 @@ class HomeActivity : ComponentActivity() {
                 NavigationEvent.NavigateBack -> {
                     finish()
                 }
-
-                NavigationEvent.NavigateToAssignedApps -> TODO()
                 NavigationEvent.NavigateToChangePassword -> {
                     val intent = Intent(this, ChangePasswordActivity::class.java)
-                    intent.putExtra("EMAIL_ADDRESS", userData.emailAddress)
+                    intent.putExtra(Constants.EMAIL_ADDRESS, userData.emailAddress)
                     startActivity(intent)
                 }
-                NavigationEvent.NavigateToEmployeeList -> TODO()
-                NavigationEvent.NavigateToHome -> TODO()
-                NavigationEvent.NavigateToViewTarget -> TODO()
+
+                else -> {}
             }
         }
 
@@ -89,7 +88,7 @@ class HomeActivity : ComponentActivity() {
 
 fun startEmployeeTracking(context: Context, userData: LoginResponse) {
     val intent = Intent(context, LocationService::class.java)
-    intent.putExtra("USER_DATA", userData)
+    intent.putExtra(Constants.USER_DATA, userData)
     context.startService(intent)
 }
 
@@ -143,13 +142,13 @@ fun DashboardScreen(
 
                                 "Assigned Applications" -> {
                                     val intent = Intent(context, ListAssignedAppsActivity::class.java)
-                                    intent.putExtra("USER_DATA", userData)
+                                    intent.putExtra(Constants.USER_DATA, userData)
                                     context.startActivity(intent)
                                 }
 
                                 "Mark Attendance" -> {
                                     val intent = Intent(context, PresenceActivity::class.java)
-                                    intent.putExtra("USER_DATA", userData)
+                                    intent.putExtra(Constants.USER_DATA, userData)
                                     context.startActivity(intent)
                                 }
 

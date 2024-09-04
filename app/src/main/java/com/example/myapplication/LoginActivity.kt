@@ -43,6 +43,7 @@ import androidx.lifecycle.ViewModelProvider
 import com.example.myapplication.api.ApiService
 import com.example.myapplication.api.RetrofitInstance
 import com.example.myapplication.api.UserRepository
+import com.example.myapplication.data.Constants
 
 
 class LoginActivity : ComponentActivity() {
@@ -67,7 +68,7 @@ class LoginActivity : ComponentActivity() {
             when (event) {
                 NavigationEvent.NavigateToHome -> {
                     val intent = Intent(this, HomeActivity::class.java)
-                    intent.putExtra("USER_DATA", viewModel.userData.value)
+                    intent.putExtra(Constants.USER_DATA, viewModel.userData.value)
                     startActivity(intent)
                 }
 
