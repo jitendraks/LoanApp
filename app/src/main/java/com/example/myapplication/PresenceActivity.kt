@@ -152,7 +152,7 @@ class PresenceActivity : ComponentActivity() {
                     } else {
                         val intent = Intent(this, LocationService::class.java)
                         stopService(intent)
-                        finish()
+                        // finish()
                         // Show end duty error
 
                     }

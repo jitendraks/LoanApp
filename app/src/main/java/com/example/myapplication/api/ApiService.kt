@@ -28,5 +28,5 @@ interface ApiService {
     suspend fun trackEmployee(@Body trackingRequest: TrackingRequest): Response<Unit>
 
     @POST("Loan/GetPendingLoanApplication")
-    suspend fun getPendingApplications(@Body employeeIdRequest: EmployeeIdRequest): Response<Array<PendingApp>>
+    suspend fun getPendingApplications(@Body employeeIdRequest: EmployeeIdRequest): Response<List<PendingApp>>
 }

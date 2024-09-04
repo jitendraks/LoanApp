@@ -43,7 +43,6 @@ import androidx.lifecycle.ViewModelProvider
 import com.example.myapplication.api.ApiService
 import com.example.myapplication.api.RetrofitInstance
 import com.example.myapplication.api.UserRepository
-import com.example.myapplication.viewmodel.UserDataViewModel
 
 
 class LoginActivity : ComponentActivity() {

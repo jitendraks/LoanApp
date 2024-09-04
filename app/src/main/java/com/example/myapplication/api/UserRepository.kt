@@ -79,7 +79,7 @@ class UserRepository {
         }
     }
 
-    suspend fun fetchAssignedApps(employeeIdRequest: EmployeeIdRequest): Result<Array<PendingApp>> {
+    suspend fun fetchAssignedApps(employeeIdRequest: EmployeeIdRequest): Result<List<PendingApp>> {
         return try {
             val response = RetrofitInstance.api.getPendingApplications(employeeIdRequest)
             Log.e("dddddd", "UserRepository: fetchAssignedApps: response = " + response.isSuccessful)

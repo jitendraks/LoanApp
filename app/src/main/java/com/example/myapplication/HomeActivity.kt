@@ -142,7 +142,9 @@ fun DashboardScreen(
                                 }
 
                                 "Assigned Applications" -> {
-
+                                    val intent = Intent(context, ListAssignedAppsActivity::class.java)
+                                    intent.putExtra("USER_DATA", userData)
+                                    context.startActivity(intent)
                                 }
 
                                 "Mark Attendance" -> {

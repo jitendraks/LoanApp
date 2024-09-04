@@ -11,5 +11,5 @@ data class FetchAttendanceResponse(
     val startAddress: String,
     val endTime: String,
     val endAddress: String,
-    val dutyTime: Int
+    val dutyTime: Double
 ) : Parcelable
