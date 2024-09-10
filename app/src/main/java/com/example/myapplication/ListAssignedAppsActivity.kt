@@ -188,27 +188,49 @@ fun ItemRow(item: PendingApp) {
     Column(modifier = Modifier.padding(16.dp)) {
         val context = LocalContext.current
 
-        Text(text = item.caseNo, modifier = Modifier.padding(start = 16.dp))
         Row(modifier = Modifier
             .fillMaxWidth()
             .padding(16.dp)) {
-            Text(text = item.borrowerName, modifier = Modifier.align(Alignment.CenterVertically))
+            Text(text = "Case No:", modifier = Modifier.align(Alignment.CenterVertically))
             Spacer(modifier = Modifier.weight(1f))
-            item.loanAmount?.let { Text(text = it, modifier = Modifier.align(Alignment.CenterVertically)) }
+            Text(text = item.caseNo, modifier = Modifier.align(Alignment.CenterVertically))
+        }
+
+        Row(modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp)) {
+            Text(text = "Borrower Name", modifier = Modifier.align(Alignment.CenterVertically))
+            Spacer(modifier = Modifier.weight(1f))
+            Text(text = item.borrowerName, modifier = Modifier.align(Alignment.CenterVertically))
+        }
+
+        Row(modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp)) {
+            Text(text = "Loan Amount", modifier = Modifier.align(Alignment.CenterVertically))
+            Spacer(modifier = Modifier.weight(1f))
+            Text(text = item.loanAmount, modifier = Modifier.align(Alignment.CenterVertically))
+        }
+
+        Row(modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp)) {
+            Text(text = "Pos After Sale", modifier = Modifier.align(Alignment.CenterVertically))
+            Spacer(modifier = Modifier.weight(1f))
+            item.posAfterSale?.let { Text(text = it, modifier = Modifier.align(Alignment.CenterVertically)) }
         }
         Row(modifier = Modifier
             .fillMaxWidth()
             .padding(16.dp)) {
-            item.posAfterSale?.let { Text(text = it, modifier = Modifier.align(Alignment.CenterVertically)) }
-            Spacer(modifier = Modifier.weight(1f))
             TextButton(onClick = {
-                    val intent = Intent(context, FeedbackActivity::class.java)
-                    intent.putExtra(Constants.LOAN_APP, item)
-                    context.startActivity(intent)
-                },
-                modifier = Modifier.align(Alignment.CenterVertically)) {
-                Text(text = "Submit Feedback")
+                val intent = Intent(context, FeedbackActivity::class.java)
+                intent.putExtra(Constants.LOAN_APP, item)
+                intent.putExtra(Constants.USER_DATA, userData)
+                context.startActivity(intent)
+            }) {
+                Text("Submit Feedback")
             }
+
         }
     }
 }

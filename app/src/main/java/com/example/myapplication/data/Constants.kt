@@ -4,5 +4,6 @@ object Constants {
     const val USER_DATA: String = "USER_DATA"
     const val EMAIL_ADDRESS: String = "EMAIL_ADDRESS"
     const val LOAN_APP: String = "LOAN_APP"
-    const val CAPTURE_PHOTO_REQUEST_CODE = 1
+    const val REQUEST_LOCATION_PERMISSION = 100
+
 }

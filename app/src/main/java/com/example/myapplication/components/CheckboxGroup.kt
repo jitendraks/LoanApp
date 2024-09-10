@@ -10,9 +10,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.example.myapplication.data.VisitDone
 
 @Composable
-fun CheckboxGroup(label: String, options: List<String>) {
+fun CheckboxGroup(label: String, options: List<Any>, param: (Any) -> Unit) {
     // State to keep track of which checkboxes are checked
     val checkedStates = remember { mutableStateListOf(*Array(options.size) { false }) }
 
@@ -45,12 +46,12 @@ fun CheckboxGroup(label: String, options: List<String>) {
                     .padding(vertical = 4.dp),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Text(option)
+                Text(option.toString())
                 Checkbox(
-                    checked = if (option == "Other") showCustomInput else checkedStates[index],
+                    checked = if (option.toString() == "Other") showCustomInput else checkedStates[index],
                     onCheckedChange = { isChecked ->
                         // Update the state when the checkbox is toggled
-                        if (option == "Other") {
+                        if (option.toString() == "Other") {
                             showCustomInput = isChecked
                             if (!isChecked) customInput = "" // Reset custom input when "Other" is unchecked
                         } else {
@@ -76,5 +77,7 @@ fun CheckboxGroup(label: String, options: List<String>) {
 @Preview(showBackground = true)
 @Composable
 fun CheckboxGroupPreview() {
-    CheckboxGroup("option1", listOf("option1", "option2"))
+    CheckboxGroup("option1", listOf("option1", "option2")) {
+        result ->
+    }
 }

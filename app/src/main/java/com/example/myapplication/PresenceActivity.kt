@@ -72,8 +72,6 @@ enum class PresenceViewType {
     TYPE_LOGOUT
 }
 
-private const val REQUEST_LOCATION_PERMISSION = 100
-
 val presenceViewModel: PresenceViewModel = PresenceViewModel(UserRepository())
 
 class PresenceActivity : ComponentActivity() {
@@ -213,7 +211,7 @@ class PresenceActivity : ComponentActivity() {
     private fun requestLocationPermission(activity: Activity) {
         if (ContextCompat.checkSelfPermission(activity, android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
             && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(activity, arrayOf(android.Manifest.permission.ACCESS_FINE_LOCATION, android.Manifest.permission.ACCESS_COARSE_LOCATION), REQUEST_LOCATION_PERMISSION)
+            ActivityCompat.requestPermissions(activity, arrayOf(android.Manifest.permission.ACCESS_FINE_LOCATION, android.Manifest.permission.ACCESS_COARSE_LOCATION), Constants.REQUEST_LOCATION_PERMISSION)
         } else {
             // Permission already granted
             val presenceResponse = presenceViewModel.presenceResponse.value
