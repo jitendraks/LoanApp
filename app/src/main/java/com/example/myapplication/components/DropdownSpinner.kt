@@ -4,21 +4,19 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.toUpperCase
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun DropdownSpinner(label: String, options: List<String>) {
+fun DropdownSpinner(label: String, options: List<Any>, callback: (Any) -> Unit) {
     // State to keep track of expanded dropdown
     var expanded by remember { mutableStateOf(false) }
 
     // State to keep track of selected option
-    var selectedOption by remember { mutableStateOf(options.first()) }
+    var selectedOption: Any by remember { mutableStateOf("") }
 
-    // State to handle custom input when "Other" is selected
-    var customInput by remember { mutableStateOf("") }
-    var showCustomInput by remember { mutableStateOf(false) }
+    // var selectedOption by remember { mutableStateOf(if(options.isEmpty() ) "" else options.first()) }
 
     ExposedDropdownMenuBox(
         expanded = expanded,
@@ -26,16 +24,18 @@ fun DropdownSpinner(label: String, options: List<String>) {
             expanded = !expanded
         }
     ) {
+        if (selectedOption !is String)
+            callback.invoke(selectedOption)
         OutlinedTextField(
-            value = selectedOption,
-            onValueChange = {},
+            value = selectedOption.toString(),
+            onValueChange = { callback.invoke(selectedOption) },
             readOnly = true,
             label = { Text(label) },
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
             modifier = Modifier
                 .fillMaxWidth()
                 .menuAnchor(), // Ensure the menu is anchored to the text field
-            colors = TextFieldDefaults.outlinedTextFieldColors()
+            colors = OutlinedTextFieldDefaults.colors()
         )
 
         ExposedDropdownMenu(
@@ -44,31 +44,13 @@ fun DropdownSpinner(label: String, options: List<String>) {
         ) {
             options.forEach { option ->
                 DropdownMenuItem(
-                    text = { Text(option) },
+                    text = { Text(option.toString()) },
                     onClick = {
-                        if (option == "Other") {
-                            selectedOption = customInput
-                            showCustomInput = true
-                        } else {
-                            selectedOption = option
-                            showCustomInput = false
-                        }
+                        selectedOption = option
                         expanded = false
+                        // Call the callback here with the selected option
+                        callback(option)
                     }
-                )
-            }
-
-            if (showCustomInput) {
-                DropdownMenuItem(
-                    text = {
-                        OutlinedTextField(
-                            value = customInput,
-                            onValueChange = { newInput -> customInput = newInput },
-                            label = { Text("Enter custom value") },
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                    },
-                    onClick = {} // No action needed on click
                 )
             }
         }
@@ -79,5 +61,6 @@ fun DropdownSpinner(label: String, options: List<String>) {
 @Composable
 fun DropdownSpinnerWithOtherOptionPreview() {
     val options = listOf("Option 1", "Option 2", "Option 3", "Other")
-    DropdownSpinner(label = "Select an option", options = options)
+    DropdownSpinner(label = "Select an option", options = options, callback = { result ->
+    })
 }

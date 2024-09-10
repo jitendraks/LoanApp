@@ -7,7 +7,6 @@ plugins {
 android {
     namespace = "com.example.myapplication"
     compileSdk = 34
-
     defaultConfig {
         applicationId = "com.example.myapplication"
         minSdk = 26
@@ -40,6 +39,7 @@ android {
     buildFeatures {
         compose = true
         viewBinding = true
+        buildConfig = true
     }
     composeOptions {
         kotlinCompilerExtensionVersion = "1.5.1"
@@ -85,6 +85,8 @@ dependencies {
     implementation(libs.androidx.camera.camera2)
     implementation(libs.androidx.camera.lifecycle)
     implementation(libs.androidx.camera.view)
+
+    implementation(libs.coil.compose)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

@@ -34,7 +34,7 @@ data class PendingApp(
     val productName: String?,
     val classVehicleType: String?,
     val loanDate: String?,
-    val loanAmount: String?,
+    val loanAmount: String,
     val costafterRepo: String?,
     val sale: String?,
     val saleDate: String?,

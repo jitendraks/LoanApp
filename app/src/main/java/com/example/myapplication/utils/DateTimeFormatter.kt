@@ -10,9 +10,14 @@ object DateTimeFormatter {
     private const val DATE_FORMAT = "MM/dd/yyyy"
     private const val TIME_FORMAT = "HH:mm"
     private const val DATE_TIME_FORMAT = "MM/dd/yyyy HH:mm"
+    private const val VISIT_DATE_TIME_FORMAT = "dd/MM/yyyy HH:mm:ss"
 
     fun formatDate(date: LocalDateTime): String {
         return format(date, DATE_FORMAT)
+    }
+
+    fun formatVisitDateTimeFormat(date: LocalDateTime): String {
+        return format(date, VISIT_DATE_TIME_FORMAT)
     }
 
     fun formatTime(date: LocalDateTime): String {
