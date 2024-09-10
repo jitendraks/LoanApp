@@ -20,4 +20,7 @@
     <string name="title_activity_presence">PresenceActivity</string>
     <string name="title_activity_list_assigned_apps">ListAssignedAppsActivity</string>
     <string name="title_activity_feedback">FeedbackActivity</string>
+    <string name="title_activity_list_pending_approvals">ListPendingApprovalsActivity</string>
+    <string name="title_activity_feedback_approval_form">FeedbackApprovalFormActivity</string>
+    <string name="title_activity_loan_details">LoanDetailsActivity</string>
 </resources>

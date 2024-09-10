@@ -87,6 +87,7 @@ dependencies {
     implementation(libs.androidx.camera.view)
 
     implementation(libs.coil.compose)
+    implementation(libs.androidx.work.runtime)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

@@ -19,8 +19,12 @@ class LoginViewModel(private val userRepository: UserRepository) : ViewModel() {
     val navigationEvent: LiveData<NavigationEvent> = _navigationEvent
     val loginState = MutableLiveData<LoginState>()
 
+    /*var username by mutableStateOf("david.john@aubank.in")
+    var password by mutableStateOf("22376")*/
     var username by mutableStateOf("abhishek.raghuwanshi3@aubank.in")
     var password by mutableStateOf("71811")
+    /*var username by mutableStateOf("")
+    var password by mutableStateOf("")*/
     var isLoading by mutableStateOf(false)
     var errorMessage by mutableStateOf<String?>(null)
 

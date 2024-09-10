@@ -7,4 +7,10 @@ data class VehicleStatus(
     override fun toString(): String {
         return name
     }
+
+    companion object {
+        fun getVehicleStatusById(vehicleStatuses: List<VehicleStatus>, vehicleStatusId: Int): VehicleStatus? {
+            return vehicleStatuses.find { it.vehicleStatusId == vehicleStatusId }
+        }
+    }
 }

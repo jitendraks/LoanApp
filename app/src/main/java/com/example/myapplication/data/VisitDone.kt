@@ -7,4 +7,10 @@ data class VisitDone(
     override fun toString(): String {
         return name
     }
+
+    companion object {
+        fun getVisitDoneById(visitDoneList: List<VisitDone>, visitDoneId: Int): VisitDone? {
+            return visitDoneList.find { it.visitDoneId == visitDoneId }
+        }
+    }
 }

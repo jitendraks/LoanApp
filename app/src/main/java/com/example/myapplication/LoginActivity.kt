@@ -2,13 +2,12 @@ package com.example.myapplication
 
 import android.content.Intent
 import android.os.Bundle
-import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.activity.viewModels
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -17,33 +16,23 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.material3.Button
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.core.content.ContextCompat.startActivity
+import com.example.myapplication.api.UserRepository
+import com.example.myapplication.components.ApiProgressBar
+import com.example.myapplication.data.Constants
 import com.example.myapplication.ui.theme.MyApplicationTheme
 import com.example.myapplication.viewmodel.LoginViewModel
 import com.example.myapplication.viewmodel.NavigationEvent
-
-import androidx.compose.foundation.layout.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.unit.dp
-import androidx.lifecycle.ViewModelProvider
-import com.example.myapplication.api.ApiService
-import com.example.myapplication.api.RetrofitInstance
-import com.example.myapplication.api.UserRepository
-import com.example.myapplication.data.Constants
 
 
 class LoginActivity : ComponentActivity() {
@@ -70,6 +59,7 @@ class LoginActivity : ComponentActivity() {
                     val intent = Intent(this, HomeActivity::class.java)
                     intent.putExtra(Constants.USER_DATA, viewModel.userData.value)
                     startActivity(intent)
+                    finish()
                 }
 
                 else -> {}
@@ -86,7 +76,7 @@ class LoginActivity : ComponentActivity() {
                     }
                     is LoginViewModel.LoginState.Error -> {
                         viewModel.isLoading = false
-                        viewModel.errorMessage = "Invalid Credentials"
+                        viewModel.errorMessage = event.exception.toString()
                     }
                     LoginViewModel.LoginState.Loading -> { // Update isLoading state here
                         viewModel.isLoading = true
@@ -98,14 +88,14 @@ class LoginActivity : ComponentActivity() {
 
 @Preview(showBackground = true)
 @Composable
-fun GreetingPreview() {
+private fun GreetingPreview() {
     MyApplicationTheme {
         LoginScreen(viewModel = LoginViewModel(UserRepository()))
     }
 }
 
 @Composable
-fun LoginScreen(modifier: Modifier = Modifier, viewModel: LoginViewModel) {
+private fun LoginScreen(modifier: Modifier = Modifier, viewModel: LoginViewModel) {
     Box(modifier = modifier.fillMaxSize()) {
         Column(
             modifier = Modifier.fillMaxSize().padding(16.dp),
@@ -161,20 +151,7 @@ fun LoginScreen(modifier: Modifier = Modifier, viewModel: LoginViewModel) {
             }
         }
         if (viewModel.isLoading) {
-            LoginProgressBar(modifier = Modifier.align(Alignment.Center))
+            ApiProgressBar(modifier = Modifier.align(Alignment.Center))
         }
-    }
-}
-
-@Composable
-fun LoginProgressBar(modifier: Modifier = Modifier) {
-    Box(
-        modifier = modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
-    ) {
-        CircularProgressIndicator(
-            modifier = Modifier.size(60.dp),
-            strokeWidth = 4.dp
-        )
     }
 }

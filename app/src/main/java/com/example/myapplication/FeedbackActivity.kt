@@ -55,6 +55,7 @@ import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import coil.compose.rememberImagePainter
 import com.example.myapplication.api.UserRepository
+import com.example.myapplication.components.ApiProgressBar
 import com.example.myapplication.components.DropdownSpinner
 import com.example.myapplication.data.Constants
 import com.example.myapplication.data.Constants.REQUEST_LOCATION_PERMISSION
@@ -64,6 +65,7 @@ import com.example.myapplication.data.Job
 import com.example.myapplication.data.Litigation
 import com.example.myapplication.data.LoanType
 import com.example.myapplication.data.PendingApp
+import com.example.myapplication.data.PendingApprovalFeedbackData
 import com.example.myapplication.data.Relation
 import com.example.myapplication.data.VehicleStatus
 import com.example.myapplication.data.VisitDone
@@ -281,7 +283,7 @@ fun FeedbackScreen(app: PendingApp,
                 titleContentColor = Color.White,
             ),
             navigationIcon = {
-                IconButton(onClick = {  }) {
+                IconButton(onClick = { viewModel.navigateBack() }) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                         contentDescription = "Back"
@@ -317,7 +319,7 @@ fun FeedbackFormWithLoading(
 }
 
 @Composable
-fun FeedbackForm(
+private fun FeedbackForm(
     app: PendingApp,
     modifier: Modifier,
     viewModel: FeedbackViewModel) {
@@ -614,7 +616,7 @@ fun FeedbackForm(
 }
 
 @Composable
-fun ThumbnailView(imageUri: Uri?) {
+private fun ThumbnailView(imageUri: Uri?) {
     if (imageUri != null) {
         // Load image from the URI using Coil
         Image(
@@ -641,7 +643,7 @@ fun ThumbnailView(imageUri: Uri?) {
 
 @Preview(showBackground = true)
 @Composable
-fun GreetingPreview4() {
+private fun GreetingPreview() {
     MyApplicationTheme {
         FeedbackScreen(
             PendingApp(

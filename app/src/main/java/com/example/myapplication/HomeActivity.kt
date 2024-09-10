@@ -1,5 +1,3 @@
-@file:OptIn(ExperimentalMaterial3Api::class)
-
 package com.example.myapplication
 
 import android.content.Context
@@ -34,18 +32,18 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
 import com.example.myapplication.api.UserRepository
+import com.example.myapplication.components.ApiProgressBar
 import com.example.myapplication.data.Constants
 import com.example.myapplication.data.LoginResponse
 import com.example.myapplication.ui.theme.MyApplicationTheme
 import com.example.myapplication.viewmodel.HomeActivityViewModel
 import com.example.myapplication.viewmodel.NavigationEvent
 
-private val viewModel: HomeActivityViewModel = HomeActivityViewModel(UserRepository())
-
 class HomeActivity : ComponentActivity() {
+    private val viewModel: HomeActivityViewModel = HomeActivityViewModel(UserRepository())
+
     private lateinit var userData: LoginResponse
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -86,22 +84,34 @@ class HomeActivity : ComponentActivity() {
     }
 }
 
-fun startEmployeeTracking(context: Context, userData: LoginResponse) {
-    val intent = Intent(context, LocationService::class.java)
-    intent.putExtra(Constants.USER_DATA, userData)
-    context.startService(intent)
+private fun startEmployeeTracking(context: Context, userData: LoginResponse) {
+    if (!LocationService.isServiceRunning(context)) {
+        val intent = Intent(context, LocationService::class.java)
+        intent.putExtra(Constants.USER_DATA, userData)
+        context.startService(intent)
+    }
 }
 
 @Composable
-fun DashboardScreen(
+private fun DashboardScreen(
     modifier: Modifier = Modifier,
     viewModel: HomeActivityViewModel,
     userData: LoginResponse
 ) {
     val context = LocalContext.current
 
-    val options = listOf("Employee List", "Assigned Applications",
-        "Mark Attendance", "Change Password", "View Target Details")
+    val options = if (userData.hodStatus) {
+        listOf(
+            "Pending Approvals", "Assigned Applications",
+            "Mark Attendance", "Change Password", "View Target Details"
+        )
+    } else {
+        listOf(
+            "Assigned Applications",
+            "Mark Attendance", "Change Password", "View Target Details"
+        )
+    }
+
 
     Box(modifier = modifier.fillMaxSize()) {
         Column(
@@ -115,13 +125,13 @@ fun DashboardScreen(
                     .weight(0.3f),
                 monthlyTarget = stringResource(
                     id = R.string.monthly_target,
-                    userData.monthlyAchievedTarget ?: 0,
-                    userData.monthlyTarget ?: 0
+                    userData.monthlyAchievedTarget,
+                    userData.monthlyTarget
                 ),
                 yearlyTarget = stringResource(
                     id = R.string.yearly_target,
-                    userData.achievedTarget ?: 0,
-                    userData.yearlyTarget ?: 0
+                    userData.achievedTarget,
+                    userData.yearlyTarget
                 )
             )
 
@@ -136,8 +146,10 @@ fun DashboardScreen(
                         modifier = Modifier.clickable {
                             // Handle click here
                             when (item) {
-                                "Employee List" -> {
-
+                                "Pending Approvals" -> {
+                                    val intent = Intent(context, ListPendingApprovalsActivity::class.java)
+                                    intent.putExtra(Constants.USER_DATA, userData)
+                                    context.startActivity(intent)
                                 }
 
                                 "Assigned Applications" -> {

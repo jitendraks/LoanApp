@@ -17,16 +17,14 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.BasicAlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -39,7 +37,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults.topAppBarColors
 import androidx.compose.runtime.Composable
@@ -49,10 +46,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.Dialog
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.example.myapplication.api.UserRepository
+import com.example.myapplication.components.ApiProgressBar
 import com.example.myapplication.data.Constants
 import com.example.myapplication.data.LoginResponse
 import com.example.myapplication.ui.theme.MyApplicationTheme
@@ -112,11 +109,11 @@ class PresenceActivity : ComponentActivity() {
             when (event) {
                 is ApiState.Success -> {
                     presenceViewModel.isLoading = false
-                    fetchAttendanceStatus(this)
+                    fetchAttendanceStatus()
                 }
                 is ApiState.Error -> {
                     presenceViewModel.isLoading = false
-                    presenceViewModel.errorMessage = "Invalid Credentials"
+                    presenceViewModel.errorMessage = event.exception.toString()
                 }
                 ApiState.Loading -> { // Update isLoading state here
                     presenceViewModel.isLoading = true
@@ -131,8 +128,8 @@ class PresenceActivity : ComponentActivity() {
             when (event) {
                 is PresenceViewModel.FetchAttendanceState.Success -> {
                     presenceViewModel.isLoading = false
-                    presenceViewModel.presenceResponse.value = event.attendanceResponse
                     val presenceResponse = event.attendanceResponse
+                    presenceViewModel.presenceResponse.value = presenceResponse
                     if(TextUtils.isEmpty(presenceResponse.startTime)) {
                         getLocation(this) { location: Location, address: String ->
                             presenceViewModel.isLoading = false
@@ -140,17 +137,13 @@ class PresenceActivity : ComponentActivity() {
                         }
                     } else if(TextUtils.isEmpty(presenceResponse.endTime)) {
                         // Start the location service
-                        val intent = Intent(this, LocationService::class.java)
-                        intent.putExtra(Constants.USER_DATA, userData)
-                        startService(intent)
-
+                        startEmployeeTracking(context = this, userData = userData)
                         getLocation(this) { location: Location, address: String ->
                             presenceViewModel.isLoading = false
                             presenceViewModel.setOutLocation(location, address, this)
                         }
                     } else {
-                        val intent = Intent(this, LocationService::class.java)
-                        stopService(intent)
+                        stopEmployeeTracking()
                         // finish()
                         // Show end duty error
 
@@ -161,6 +154,7 @@ class PresenceActivity : ComponentActivity() {
                     presenceViewModel.errorMessage = "Fetch presence failed"
                     getLocation(this) { location: Location, address: String ->
                         presenceViewModel.isLoading = false
+                        presenceViewModel.presenceResponse.value = null
                         presenceViewModel.setInLocation(location, address, this)
                     }
                 }
@@ -170,10 +164,23 @@ class PresenceActivity : ComponentActivity() {
             }
         }
 
-        fetchAttendanceStatus(this)
+        fetchAttendanceStatus()
     }
 
-    private fun fetchAttendanceStatus(activity: Activity) {
+    private fun startEmployeeTracking(context: Context, userData: LoginResponse) {
+        if (!LocationService.isServiceRunning(context)) {
+            val intent = Intent(context, LocationService::class.java)
+            intent.putExtra(Constants.USER_DATA, userData)
+            context.startService(intent)
+        }
+    }
+
+    private fun stopEmployeeTracking() {
+        val intent = Intent(this, LocationService::class.java)
+        stopService(intent)
+    }
+
+    private fun fetchAttendanceStatus() {
         presenceViewModel.isLoading = true
         presenceViewModel.fetchAttendance(userData.employeeId)
     }
@@ -255,7 +262,7 @@ class PresenceActivity : ComponentActivity() {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun PresenceScreen(isLoading: Boolean, userData: LoginResponse, modifier: Modifier) {
+private fun PresenceScreen(isLoading: Boolean, userData: LoginResponse, modifier: Modifier) {
     Scaffold(topBar = {
         TopAppBar(
             title = { Text("Set Presence") },
@@ -266,7 +273,7 @@ fun PresenceScreen(isLoading: Boolean, userData: LoginResponse, modifier: Modifi
             navigationIcon = {
                 IconButton(onClick = { presenceViewModel.navigateBack() }) {
                     Icon(
-                        imageVector = Icons.Filled.ArrowBack,
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                         contentDescription = "Back"
                     )
                 }
@@ -292,14 +299,14 @@ fun PresenceScreen(isLoading: Boolean, userData: LoginResponse, modifier: Modifi
                 }
             }
             if (isLoading) {
-                LocationProgressBar(modifier = Modifier.align(Alignment.Center))
+                ApiProgressBar(modifier = Modifier.align(Alignment.Center))
             }
         }
     })
 }
 
 @Composable
-fun PresenceView(
+private fun PresenceView(
     modifier: Modifier,
     address: String,
     time: String,
@@ -359,24 +366,9 @@ fun PresenceView(
         }
 }
 
-
-
-@Composable
-fun LocationProgressBar(modifier: Modifier = Modifier) {
-    Box(
-        modifier = modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
-    ) {
-        CircularProgressIndicator(
-            modifier = Modifier.size(60.dp),
-            strokeWidth = 4.dp
-        )
-    }
-}
-
 @Preview(showBackground = true)
 @Composable
-fun GreetingPreview2() {
+private fun GreetingPreview() {
     MyApplicationTheme {
         PresenceScreen(isLoading = false,
             LoginResponse(

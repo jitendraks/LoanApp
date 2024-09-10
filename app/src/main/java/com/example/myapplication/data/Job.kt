@@ -7,4 +7,10 @@ data class Job(
     override fun toString(): String {
         return name
     }
+
+    companion object {
+        fun getJobById(jobs: List<Job>, jobId: Int): Job? {
+            return jobs.find { it.jobId == jobId }
+        }
+    }
 }

@@ -2,18 +2,18 @@ package com.example.myapplication
 
 import android.annotation.SuppressLint
 import android.app.Activity
+import android.app.ActivityManager
 import android.app.Service
 import android.content.Context
+import android.content.Context.*
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.location.Address
 import android.location.Geocoder
-import android.location.Location
-import android.location.LocationListener
-import android.location.LocationManager
 import android.os.IBinder
 import android.os.Looper
 import android.util.Log
+import androidx.core.content.ContextCompat.getSystemService
 import com.example.myapplication.api.UserRepository
 import com.example.myapplication.data.LoginResponse
 import com.example.myapplication.data.TrackingRequest
@@ -43,8 +43,10 @@ class LocationService : Service() {
         if (intent != null) {
             userData = intent.getParcelableExtra("USER_DATA")!!
         }
+
+        // Start the service if it's not running
         requestLocationUpdates(applicationContext)
-        return START_STICKY
+        return START_NOT_STICKY
     }
 
     override fun onDestroy() {
@@ -127,6 +129,14 @@ class LocationService : Service() {
                 Log.e("Address", "Unable to get address from latitude and longitude")
                 return null
             }
+        }
+    }
+
+    companion object {
+        fun isServiceRunning(context: Context): Boolean {
+            val activityManager = context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
+            val runningServices = activityManager.getRunningServices(Integer.MAX_VALUE)
+            return runningServices.any { service -> service.service.className == LocationService::class.java.name }
         }
     }
 }

@@ -8,4 +8,10 @@ data class FinancialCondition(
     override fun toString(): String {
         return name
     }
+
+    companion object {
+        fun getFinancialConditionById(finConditions: List<FinancialCondition>, finConditionId: Int): FinancialCondition? {
+            return finConditions.find { it.finConditionId == finConditionId }
+        }
+    }
 }

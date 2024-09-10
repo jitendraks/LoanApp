@@ -1,6 +1,5 @@
 package com.example.myapplication
 
-import android.content.Intent
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
@@ -14,11 +13,10 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -26,23 +24,21 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults.topAppBarColors
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.myapplication.api.UserRepository
+import com.example.myapplication.components.ApiProgressBar
 import com.example.myapplication.data.Constants
 import com.example.myapplication.ui.theme.MyApplicationTheme
 import com.example.myapplication.viewmodel.ApiState
 import com.example.myapplication.viewmodel.ChangePasswordViewModel
-import com.example.myapplication.viewmodel.LoginViewModel
 import com.example.myapplication.viewmodel.NavigationEvent
 
 class ChangePasswordActivity : ComponentActivity() {
@@ -79,7 +75,7 @@ class ChangePasswordActivity : ComponentActivity() {
                 }
                 is ApiState.Error -> {
                     viewModel.isLoading = false
-                    viewModel.errorMessage = "Invalid Credentials"
+                    viewModel.errorMessage = event.exception.toString()
                 }
                 ApiState.Loading -> { // Update isLoading state here
                     viewModel.isLoading = true
@@ -91,7 +87,7 @@ class ChangePasswordActivity : ComponentActivity() {
 
 @Preview(showBackground = true)
 @Composable
-fun Greeting(modifier: Modifier = Modifier) {
+private fun Greeting(modifier: Modifier = Modifier) {
     MyApplicationTheme {
         ChangePasswordScreen(viewModel = ChangePasswordViewModel(UserRepository()))
     }
@@ -99,8 +95,7 @@ fun Greeting(modifier: Modifier = Modifier) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ChangePasswordScreen(viewModel: ChangePasswordViewModel,
-                         modifier: Modifier = Modifier) {
+private fun ChangePasswordScreen(viewModel: ChangePasswordViewModel) {
     Scaffold(topBar = {
         TopAppBar(
             title = { Text("Change Password") },
@@ -111,7 +106,7 @@ fun ChangePasswordScreen(viewModel: ChangePasswordViewModel,
             navigationIcon = {
                 IconButton(onClick = { viewModel.navigateBack() }) {
                     Icon(
-                        imageVector = Icons.Filled.ArrowBack,
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                         contentDescription = "Back"
                     )
                 }
@@ -127,7 +122,7 @@ fun ChangePasswordScreen(viewModel: ChangePasswordViewModel,
 }
 
 @Composable
-fun ChangePasswordForm(modifier: Modifier = Modifier, viewModel: ChangePasswordViewModel) {
+private fun ChangePasswordForm(modifier: Modifier = Modifier, viewModel: ChangePasswordViewModel) {
     Box(modifier = modifier.fillMaxSize()) {
         Column(
             modifier = Modifier.fillMaxSize().padding(16.dp),
@@ -162,18 +157,5 @@ fun ChangePasswordForm(modifier: Modifier = Modifier, viewModel: ChangePasswordV
         if (viewModel.isLoading) {
             ApiProgressBar(modifier = Modifier.align(Alignment.Center))
         }
-    }
-}
-
-@Composable
-fun ApiProgressBar(modifier: Modifier = Modifier) {
-    Box(
-        modifier = modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
-    ) {
-        CircularProgressIndicator(
-            modifier = Modifier.size(60.dp),
-            strokeWidth = 4.dp
-        )
     }
 }

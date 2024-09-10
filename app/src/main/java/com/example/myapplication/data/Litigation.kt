@@ -7,4 +7,10 @@ data class Litigation(
     override fun toString(): String {
         return name
     }
+
+    companion object {
+        fun getLitigationById(litigations: List<Litigation>, litigationId: Int): Litigation? {
+            return litigations.find { it.litigationId == litigationId }
+        }
+    }
 }

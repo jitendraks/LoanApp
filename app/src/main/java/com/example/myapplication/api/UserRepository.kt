@@ -1,6 +1,7 @@
 package com.example.myapplication.api
 
 import android.util.Log
+import com.example.myapplication.data.ApprovalRequest
 import com.example.myapplication.data.AttendanceRequest
 import com.example.myapplication.data.EmployeeIdRequest
 import com.example.myapplication.data.FeedbackData
@@ -9,6 +10,7 @@ import com.example.myapplication.data.LoginRequest
 import com.example.myapplication.data.LoginResponse
 import com.example.myapplication.data.MasterData
 import com.example.myapplication.data.PendingApp
+import com.example.myapplication.data.PendingApprovalFeedbackData
 import com.example.myapplication.data.TrackingRequest
 import kotlinx.coroutines.CompletableDeferred
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
@@ -109,6 +111,23 @@ class UserRepository {
         }
     }
 
+    suspend fun fetchPendingAprovalApps(employeeIdRequest: EmployeeIdRequest): Result<List<PendingApprovalFeedbackData>> {
+        return try {
+            val response = RetrofitInstance.api.getPendingApprovals(employeeIdRequest)
+            Log.e(
+                "dddddd",
+                "UserRepository: fetchAssignedApps: response = " + response.isSuccessful
+            )
+            if (response.isSuccessful) {
+                Result.success(response.body()!!)
+            } else {
+                Result.failure(Exception("Fetch presence api failed"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
     suspend fun fetchMasterData(): Result<MasterData> {
         return try {
             val response = RetrofitInstance.api.getMasterData()
@@ -122,7 +141,21 @@ class UserRepository {
             Result.failure(e)
         }
     }
-    
+
+    suspend fun approveFeedback(approvalRequest: ApprovalRequest): Result<Boolean> {
+        return try {
+            val response = RetrofitInstance.api.approveFeedback(approvalRequest)
+            Log.e("dddddd", "UserRepository: approveFeedback: response = " + response.isSuccessful)
+            if (response.isSuccessful) {
+                Result.success(true)
+            } else {
+                Result.failure(Exception("Login failed"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
     suspend fun submitFeedbackData(feedbackData: FeedbackData): Result<Boolean> {
         return try {
             val imageParts = feedbackData.images.map {

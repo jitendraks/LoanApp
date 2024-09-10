@@ -1,5 +1,6 @@
 package com.example.myapplication.api
 
+import com.example.myapplication.data.ApprovalRequest
 import com.example.myapplication.data.AttendanceRequest
 import com.example.myapplication.data.EmployeeIdRequest
 import com.example.myapplication.data.FetchAttendanceResponse
@@ -7,6 +8,7 @@ import com.example.myapplication.data.LoginRequest
 import com.example.myapplication.data.LoginResponse
 import com.example.myapplication.data.MasterData
 import com.example.myapplication.data.PendingApp
+import com.example.myapplication.data.PendingApprovalFeedbackData
 import com.example.myapplication.data.TrackingRequest
 import okhttp3.MultipartBody
 import okhttp3.RequestBody
@@ -36,6 +38,9 @@ interface ApiService {
 
     @POST("Loan/GetPendingLoanApplication")
     suspend fun getPendingApplications(@Body employeeIdRequest: EmployeeIdRequest): Response<List<PendingApp>>
+
+    @POST("Loan/GetApplicationForApproval")
+    suspend fun getPendingApprovals(@Body employeeIdRequest: EmployeeIdRequest): Response<List<PendingApprovalFeedbackData>>
 
     @POST("Master/getMastersData")
     suspend fun getMasterData(): Response<MasterData>
@@ -111,4 +116,7 @@ interface ApiService {
         @Part("Latitude") Latitude: RequestBody,
         @Part("Longitude") Longitude: RequestBody
     ): Call<ResponseBody>  // Your response type
+
+    @POST("Loan/ApproveFeedback")
+    suspend fun approveFeedback(@Body approvalRequest: ApprovalRequest): Response<Void>
 }
