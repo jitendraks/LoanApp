@@ -2,13 +2,15 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.jetbrains.kotlin.android)
     id("org.jetbrains.kotlin.plugin.parcelize")
+    alias(libs.plugins.google.gms.google.services)
+    alias(libs.plugins.google.firebase.crashlytics)
 }
 
 android {
-    namespace = "com.example.myapplication"
+    namespace = "com.aubank.loanapp"
     compileSdk = 34
     defaultConfig {
-        applicationId = "com.example.myapplication"
+        applicationId = "com.aubank.loanapp"
         minSdk = 26
         targetSdk = 34
         versionCode = 1
@@ -70,6 +72,7 @@ dependencies {
     implementation(libs.androidx.runtime.livedata) // or the latest version
 
     implementation(libs.kotlinx.coroutines.android)
+    implementation(libs.firebase.crashlytics)
 
     implementation(libs.retrofit)
     implementation(libs.converter.gson)
@@ -88,6 +91,8 @@ dependencies {
 
     implementation(libs.coil.compose)
     implementation(libs.androidx.work.runtime)
+    implementation(libs.firebase.common.ktx)
+    implementation(libs.firebase.crashlytics.ktx)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
