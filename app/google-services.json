@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "308800018724",
+    "project_id": "loan-app-e26fe",
+    "storage_bucket": "loan-app-e26fe.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:308800018724:android:a24fa1d44d7ab74ef13bb1",
+        "android_client_info": {
+          "package_name": "com.aubank.loanapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDH_J3MEPAhIuVK2oMwa6hu6Kq3BZTyH6s"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
