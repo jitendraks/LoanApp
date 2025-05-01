@@ -1,6 +1,5 @@
 package com.aubank.loanapp
 
-import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -19,7 +18,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -281,12 +279,12 @@ private fun GreetingPreview5() =
         approverRemark = "",
         createdDate = "",
         employeeName = "ABHISHEK RAGHUWANSHI",
-        loanAmount = 225000,
+        loanAmount = 225000.0,
         loanDate = "2023-04-28T00:00:00",
-        bookLossPOS = 139005,
-        costafterRepo = 199005,
-        posBeforeSale = 0,
-        posAfterSale = 122360,
+        bookLossPOS = 139005.0,
+        costafterRepo = 199005.0,
+        posBeforeSale = 0.0,
+        posAfterSale = 122360.0,
         borrowerName = "RAM SINGH",
         borrowerAddress = "HOUSE NO 01 WARD NO 04 TEHSIL BHUNTAR NH 21 VILLAGE KALHELI SHARABAI PO BHUNTAR KHOKHAN, KULLU, HIMACHAL PRADESH, Pin-175125",
         borrowerContactNo = "7876639912",
@@ -307,6 +305,7 @@ private fun GreetingPreview5() =
                 hodStatus = true,
                 trackingTime = "15",
                 achievedTarget = 34343,
-                trackingStatus = true
+                trackingStatus = true,
+                applicationAlloted = 0
             )
     )

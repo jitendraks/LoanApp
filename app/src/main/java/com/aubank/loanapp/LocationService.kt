@@ -1,11 +1,9 @@
 package com.aubank.loanapp
 
 import android.annotation.SuppressLint
-import android.app.Activity
 import android.app.ActivityManager
 import android.app.Service
 import android.content.Context
-import android.content.Context.*
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.location.Address
@@ -13,7 +11,6 @@ import android.location.Geocoder
 import android.os.IBinder
 import android.os.Looper
 import android.util.Log
-import androidx.core.content.ContextCompat.getSystemService
 import com.aubank.loanapp.api.UserRepository
 import com.aubank.loanapp.data.LoginResponse
 import com.aubank.loanapp.data.TrackingRequest

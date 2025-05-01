@@ -7,4 +7,6 @@ object Constants {
     const val PENDING_APPROVAL_FEEDBACK_DATA: String = "PENDING_APPROVAL_FEEDBACK_DATA"
     const val REQUEST_LOCATION_PERMISSION = 100
     const val VISIT_DONE_ID: String = "VISIT_DONE_ID"
+    const val PREFS = "com.aubank.loanapp.LOAN_APP_PREFS"
+    const val PREF_NAME_USERNAME = "com.aubank.loanapp.USERNAME"
 }

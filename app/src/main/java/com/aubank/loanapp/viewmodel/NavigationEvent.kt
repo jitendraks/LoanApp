@@ -1,7 +1,5 @@
 package com.aubank.loanapp.viewmodel
 
-import com.google.android.material.navigation.NavigationBarItemView
-
 sealed class NavigationEvent {
     object NavigateToHome : NavigationEvent()
     object NavigateBack : NavigationEvent()

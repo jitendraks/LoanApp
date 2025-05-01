@@ -11,7 +11,6 @@ import androidx.lifecycle.viewModelScope
 import com.aubank.loanapp.api.UserRepository
 import com.aubank.loanapp.data.FeedbackData
 import com.aubank.loanapp.data.LoginResponse
-import com.aubank.loanapp.data.MasterData
 import com.aubank.loanapp.data.PendingApp
 import com.aubank.loanapp.data.PendingApprovalFeedbackData
 import com.aubank.loanapp.utils.DateTimeFormatter

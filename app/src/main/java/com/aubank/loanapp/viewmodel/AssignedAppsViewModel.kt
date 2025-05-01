@@ -19,7 +19,6 @@ class AssignedAppsViewModel(private val userRepository: UserRepository) : ViewMo
     val navigationEvent: LiveData<NavigationEvent> = _navigationEvent
 
     var isLoading by mutableStateOf(false)
-    var errorMessage by mutableStateOf<String?>(null)
 
     val fetchAssignedAppsApiState = MutableLiveData<FetchAssignedAppsApiState>()
     val fetchLastFeedbackDataApiState = MutableLiveData<FetchLastFeedbackDataApiState>()

@@ -8,11 +8,7 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aubank.loanapp.api.UserRepository
-import com.aubank.loanapp.data.FeedbackDataRequest
 import com.aubank.loanapp.data.MasterData
-import com.aubank.loanapp.data.PendingApp
-import com.aubank.loanapp.data.PendingApprovalFeedbackData
-import com.aubank.loanapp.data.VisitDone
 import kotlinx.coroutines.launch
 
 class HomeActivityViewModel(private val userRepository: UserRepository) : ViewModel() {

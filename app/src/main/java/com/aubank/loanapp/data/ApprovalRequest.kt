@@ -9,6 +9,7 @@ data class ApprovalRequest(
     var approvedStatus: Int,
     var approverId: Int,
     var approverRemark: String,
-    var feedbackId: Int) {
-    constructor() : this(0, 0, "", "", "", 0, 0, "", 0)
+    var feedbackId: Int,
+    var followupDetailId: Int) {
+    constructor() : this(0, 0, "", "", "", 0, 0, "", 0, 0)
 }

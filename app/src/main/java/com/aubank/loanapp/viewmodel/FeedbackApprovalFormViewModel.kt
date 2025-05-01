@@ -10,7 +10,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aubank.loanapp.api.UserRepository
 import com.aubank.loanapp.data.ApprovalRequest
-import com.aubank.loanapp.data.FeedbackData
 import com.aubank.loanapp.data.FeedbackDataWithIdValue
 import com.aubank.loanapp.data.FinancialCondition
 import com.aubank.loanapp.data.IncomeSlab
@@ -19,14 +18,10 @@ import com.aubank.loanapp.data.Litigation
 import com.aubank.loanapp.data.LoanType
 import com.aubank.loanapp.data.LoginResponse
 import com.aubank.loanapp.data.MasterData
-import com.aubank.loanapp.data.PendingApp
-import com.aubank.loanapp.data.PendingApprovalFeedbackData
 import com.aubank.loanapp.data.Relation
 import com.aubank.loanapp.data.VehicleStatus
 import com.aubank.loanapp.data.VisitDone
-import com.aubank.loanapp.utils.DateTimeFormatter
 import kotlinx.coroutines.launch
-import java.time.LocalDateTime
 
 class FeedbackApprovalFormViewModel(private val userRepository: UserRepository) : ViewModel() {
     private val _navigationEvent = MutableLiveData<NavigationEvent>()
@@ -101,6 +96,7 @@ class FeedbackApprovalFormViewModel(private val userRepository: UserRepository) 
             isLoading = true
             it.approverId = userData!!.employeeId.toInt()
             it.feedbackId = feedbackData.value!!.pendingApprovalFeedbackData!!.feedBackId
+            it.followupDetailId = feedbackData.value!!.pendingApprovalFeedbackData!!.followupDetailId
             it.approvedStatus = if (approvalStatus) 1 else 0
             viewModelScope.launch {
                 postFeedbackApprovalDataApiState.value = PostApprovalFeedbackDataApiState.Loading

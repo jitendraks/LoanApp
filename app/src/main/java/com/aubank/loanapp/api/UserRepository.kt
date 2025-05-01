@@ -241,15 +241,15 @@ class UserRepository {
         }
     }
 
-    fun createStringBodyPart(part: String): RequestBody {
+    private fun createStringBodyPart(part: String): RequestBody {
         return part.toRequestBody("text/plain".toMediaTypeOrNull())
     }
 
-    fun createBoolBodyPart(part: Boolean): RequestBody {
+    private fun createBoolBodyPart(part: Boolean): RequestBody {
         return createStringBodyPart(part.toString())
     }
 
-    fun createIntBodyPart(part: Int): RequestBody {
+    private fun createIntBodyPart(part: Int): RequestBody {
         return createStringBodyPart(part.toString())
     }
 }

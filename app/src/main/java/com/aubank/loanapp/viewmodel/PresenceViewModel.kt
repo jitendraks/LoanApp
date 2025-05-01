@@ -1,10 +1,6 @@
 package com.aubank.loanapp.viewmodel
 
-import android.content.Context
-import android.location.Address
-import android.location.Geocoder
 import android.location.Location
-import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -19,7 +15,6 @@ import com.aubank.loanapp.data.FetchAttendanceResponse
 import com.aubank.loanapp.utils.DateTimeFormatter
 import kotlinx.coroutines.launch
 import java.time.LocalDateTime
-import java.util.Locale
 
 class PresenceViewModel(private val userRepository: UserRepository) : ViewModel() {
     private val _navigationEvent = MutableLiveData<NavigationEvent>()
@@ -36,39 +31,25 @@ class PresenceViewModel(private val userRepository: UserRepository) : ViewModel(
     var isLoading by mutableStateOf(true)
     var errorMessage by mutableStateOf<String?>(null)
 
-    val attendanceApiState = MutableLiveData<ApiState>()
-    val fetchAttendanceApiState = MutableLiveData<FetchAttendanceState>()
+    val attendanceApiState = MutableLiveData<ApiState?>()
+    val fetchAttendanceApiState = MutableLiveData<FetchAttendanceState?>()
 
     fun navigateBack() {
         _navigationEvent.value = NavigationEvent.NavigateBack
     }
 
-    fun setInLocation(location: Location, address: String, context: Context) {
+    fun setInLocation(location: Location, address: String) {
         inLocation = Pair(location.latitude.toString(), location.longitude.toString())
         inAddress.value = address
         inTime = LocalDateTime.now()
     }
 
-    fun setOutLocation(location: Location, address: String, context: Context) {
+    fun setOutLocation(location: Location, address: String) {
         outLocation = Pair(location.latitude.toString(), location.longitude.toString())
         outAddress.value = address
         outTime = LocalDateTime.now()
     }
 
-    public fun getAddressFromLatLng(context: Context, latitude: Double, longitude: Double): String? {
-        val geocoder = Geocoder(context, Locale.getDefault())
-        val addresses: List<Address>? = geocoder.getFromLocation(latitude, longitude, 1)
-
-        if (!addresses.isNullOrEmpty()) {
-            val address = addresses[0]
-            val addressString = address.getAddressLine(0)
-            Log.d("Address", addressString)
-            return addressString
-        } else {
-            Log.e("Address", "Unable to get address from latitude and longitude")
-            return null
-        }
-    }
 
     fun getFormattedTime(dateTime: LocalDateTime) : String {
         return if (dateTime != LocalDateTime.MIN) DateTimeFormatter.formatTime(dateTime) else ""
@@ -118,5 +99,10 @@ class PresenceViewModel(private val userRepository: UserRepository) : ViewModel(
         data object Loading : FetchAttendanceState()
         data class Success(val attendanceResponse: FetchAttendanceResponse) : FetchAttendanceState()
         data class Error(val exception: Throwable?) : FetchAttendanceState()
+    }
+
+    fun resetApiResponseState() {
+        fetchAttendanceApiState.value = null
+        attendanceApiState.value = null
     }
 }

@@ -7,7 +7,6 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.location.Location
-import android.net.Uri
 import android.os.Bundle
 import android.os.Environment
 import android.os.Looper
@@ -17,7 +16,6 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -25,7 +23,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -52,13 +49,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
-import coil.compose.rememberAsyncImagePainter
 import com.aubank.loanapp.api.UserRepository
 import com.aubank.loanapp.components.ApiProgressBar
 import com.aubank.loanapp.components.DropdownSpinner
@@ -67,6 +62,7 @@ import com.aubank.loanapp.data.Constants
 import com.aubank.loanapp.data.Constants.REQUEST_LOCATION_PERMISSION
 import com.aubank.loanapp.data.FeedbackData
 import com.aubank.loanapp.data.FinancialCondition
+import com.aubank.loanapp.data.IncomeSlab
 import com.aubank.loanapp.data.Job
 import com.aubank.loanapp.data.Litigation
 import com.aubank.loanapp.data.LoanType
@@ -555,6 +551,16 @@ private fun FeedbackForm(
                     modifier = Modifier.padding(top = 4.dp)
                 )
             }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+        DropdownSpinner(
+            "Borrower Income",
+            masterData.incomeSlabs
+        ) { result ->
+            val fd = feedbackData.copy()
+            fd.IncomeId = (result as IncomeSlab).incomeId
+            viewModel.feedbackData.value = fd
         }
 
         Spacer(modifier = Modifier.height(16.dp))

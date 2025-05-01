@@ -11,7 +11,6 @@ import androidx.lifecycle.viewModelScope
 import com.aubank.loanapp.api.UserRepository
 import com.aubank.loanapp.data.FeedbackData
 import com.aubank.loanapp.data.LoginResponse
-import com.aubank.loanapp.data.MasterData
 import com.aubank.loanapp.data.PendingApp
 import com.aubank.loanapp.utils.DateTimeFormatter
 import kotlinx.coroutines.launch
@@ -76,7 +75,6 @@ class FeedbackViewModel(private val userRepository: UserRepository) : ViewModel(
     fun validateFormFields() : Boolean {
         feedbackData.value?.let {
             return it.FinConditionId > 0
-                    && it.IncomeId > 0
                     && it.JobId > 0
                     && it.RelationId > 0
                     && (it.BorrowerLivingCurrentAddress || it.NewAddressOfBorrower.isNotEmpty())

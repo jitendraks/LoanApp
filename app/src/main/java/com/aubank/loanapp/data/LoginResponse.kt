@@ -1,8 +1,6 @@
 package com.aubank.loanapp.data
 
-import android.os.Parcel
 import android.os.Parcelable
-
 import kotlinx.parcelize.Parcelize
 
 @Parcelize
@@ -18,5 +16,6 @@ data class LoginResponse(
     val hodStatus: Boolean,
     val monthlyAchievedTarget: Int,
     val achievedTarget: Int,
-    val trackingStatus: Boolean
+    val trackingStatus: Boolean,
+    val applicationAlloted: Int
 ) : Parcelable

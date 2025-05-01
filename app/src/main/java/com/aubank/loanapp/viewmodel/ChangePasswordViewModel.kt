@@ -27,10 +27,6 @@ class ChangePasswordViewModel(private val userRepository: UserRepository) : View
         this.newPassword = newPassword
     }
 
-    fun navigateToHomeActivity() {
-        _navigationEvent.value = NavigationEvent.NavigateToHome
-    }
-
     fun navigateBack() {
         _navigationEvent.value = NavigationEvent.NavigateBack
     }
@@ -49,7 +45,4 @@ class ChangePasswordViewModel(private val userRepository: UserRepository) : View
         }
     }
 
-    private fun cancelUpdatePassword() {
-        navigateBack()
-    }
 }

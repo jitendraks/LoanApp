@@ -165,7 +165,7 @@ class FeedbackApprovalFormActivity : ComponentActivity() {
             when (event) {
                 is FeedbackApprovalFormViewModel.PostApprovalFeedbackDataApiState.Success -> {
                     viewModel.isLoading = false
-                    Toast.makeText(this, "Feedback submitted", Toast.LENGTH_LONG).show()
+                    Toast.makeText(this, "Feedback Approved.", Toast.LENGTH_LONG).show()
                     finish()
                 }
 
@@ -179,8 +179,7 @@ class FeedbackApprovalFormActivity : ComponentActivity() {
                 }
             }
         }
-        viewModel.isLoading = true
-        // getLocation(this)
+
     }
 
     @Throws(IOException::class)

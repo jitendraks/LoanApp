@@ -1,11 +1,18 @@
 package com.aubank.loanapp
 
+import android.Manifest
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.os.Bundle
+import android.os.Looper
+import android.util.Log
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.ActivityResultLauncher
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -20,7 +27,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -33,19 +39,26 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import com.aubank.loanapp.api.UserRepository
 import com.aubank.loanapp.components.ApiProgressBar
 import com.aubank.loanapp.data.Constants
 import com.aubank.loanapp.data.LoginResponse
 import com.aubank.loanapp.ui.theme.MyApplicationTheme
-import com.aubank.loanapp.viewmodel.FeedbackViewModel
 import com.aubank.loanapp.viewmodel.HomeActivityViewModel
 import com.aubank.loanapp.viewmodel.NavigationEvent
+import com.google.android.gms.location.LocationCallback
+import com.google.android.gms.location.LocationRequest
+import com.google.android.gms.location.LocationResult
+import com.google.android.gms.location.LocationServices
+import com.google.android.gms.location.Priority
 
 class HomeActivity : ComponentActivity() {
     private val viewModel: HomeActivityViewModel = HomeActivityViewModel(UserRepository())
 
     private lateinit var userData: LoginResponse
+    private lateinit var locationPermissionLauncher: ActivityResultLauncher<Array<String>>
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -103,7 +116,82 @@ class HomeActivity : ComponentActivity() {
         }
 
         viewModel.fetchMasterData()
+        // Register permission launcher
+        locationPermissionLauncher = registerForActivityResult(
+            ActivityResultContracts.RequestMultiplePermissions()
+        ) { permissions ->
+            val granted = permissions[Manifest.permission.ACCESS_FINE_LOCATION] == true
+            if (granted) {
+                lockLocationOnce(this) // 🔐 Start fetching location
+            } else {
+                Toast.makeText(this, "Location permission denied", Toast.LENGTH_SHORT).show()
+            }
+        }
+
+        checkAndRequestLocationPermission()
     }
+
+    private fun checkAndRequestLocationPermission() {
+        if (ContextCompat.checkSelfPermission(
+                this,
+                Manifest.permission.ACCESS_FINE_LOCATION
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            locationPermissionLauncher.launch(
+                arrayOf(
+                    Manifest.permission.ACCESS_FINE_LOCATION,
+                    Manifest.permission.ACCESS_COARSE_LOCATION
+                )
+            )
+        } else {
+            lockLocationOnce(this)
+        }
+    }
+
+    private fun lockLocationOnce(context: Context) {
+        val fusedLocationClient = LocationServices.getFusedLocationProviderClient(context)
+
+        if (ActivityCompat.checkSelfPermission(
+                context,
+                Manifest.permission.ACCESS_FINE_LOCATION
+            ) != PackageManager.PERMISSION_GRANTED &&
+            ActivityCompat.checkSelfPermission(
+                context,
+                Manifest.permission.ACCESS_COARSE_LOCATION
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            Log.w("Location", "Permission not granted. Skipping location fetch.")
+            return
+        }
+
+        val locationRequest = LocationRequest.Builder(
+            Priority.PRIORITY_HIGH_ACCURACY,
+            0L
+        ).apply {
+            setMaxUpdates(1)
+        }.build()
+
+        val locationCallback = object : LocationCallback() {
+            override fun onLocationResult(result: LocationResult) {
+                val location = result.lastLocation ?: return
+                Log.d("Location", "Location locked: ${location.latitude}, ${location.longitude}")
+
+                fusedLocationClient.removeLocationUpdates(this)
+            }
+        }
+
+        try {
+            fusedLocationClient.requestLocationUpdates(
+                locationRequest,
+                locationCallback,
+                Looper.getMainLooper()
+            )
+        } catch (e: SecurityException) {
+            Log.e("Location", "Location request failed due to missing permission", e)
+        }
+    }
+
+
 }
 
 private fun startEmployeeTracking(context: Context, userData: LoginResponse) {
@@ -121,17 +209,30 @@ private fun DashboardScreen(
     userData: LoginResponse
 ) {
     val context = LocalContext.current
+    val pendingApprovals = "Pending Approvals" to {
+        val intent = Intent(context, ListPendingApprovalsActivity::class.java)
+        intent.putExtra(Constants.USER_DATA, userData)
+        context.startActivity(intent)
+    }
+    val assignedApplications = "Assigned Applications (${userData.applicationAlloted})" to {
+        val intent = Intent(context, ListAssignedAppsActivity::class.java)
+        intent.putExtra(Constants.USER_DATA, userData)
+        context.startActivity(intent)
+    }
 
+    val markAttendance = "Mark Attendance" to {
+        val intent = Intent(context, PresenceActivity::class.java)
+        intent.putExtra(Constants.USER_DATA, userData)
+        context.startActivity(intent)
+    }
+
+    val changePassword = "Change Password" to {
+        viewModel.navigateToChangePasswordActivity()
+    }
     val options = if (userData.hodStatus) {
-        listOf(
-            "Pending Approvals", "Assigned Applications",
-            "Mark Attendance", "Change Password"
-        )
+        listOf(pendingApprovals, assignedApplications, markAttendance, changePassword)
     } else {
-        listOf(
-            "Assigned Applications",
-            "Mark Attendance", "Change Password"
-        )
+        listOf(assignedApplications, markAttendance, changePassword)
     }
 
 
@@ -167,34 +268,12 @@ private fun DashboardScreen(
                     Box(
                         modifier = Modifier.clickable {
                             // Handle click here
-                            when (item) {
-                                "Pending Approvals" -> {
-                                    val intent = Intent(context, ListPendingApprovalsActivity::class.java)
-                                    intent.putExtra(Constants.USER_DATA, userData)
-                                    context.startActivity(intent)
-                                }
-
-                                "Assigned Applications" -> {
-                                    val intent = Intent(context, ListAssignedAppsActivity::class.java)
-                                    intent.putExtra(Constants.USER_DATA, userData)
-                                    context.startActivity(intent)
-                                }
-
-                                "Mark Attendance" -> {
-                                    val intent = Intent(context, PresenceActivity::class.java)
-                                    intent.putExtra(Constants.USER_DATA, userData)
-                                    context.startActivity(intent)
-                                }
-
-                                "Change Password" -> {
-                                    viewModel.navigateToChangePasswordActivity()
-                                }
-                            }
-                            println("Item clicked: $item")
+                            item.second.invoke()
+                            println("Item clicked: ${item.first}")
                         }
                     ) {
                         Text(
-                            text = item,
+                            text = item.first,
                             style = MaterialTheme.typography.bodyMedium,
                             modifier = Modifier.padding(16.dp)
                         )

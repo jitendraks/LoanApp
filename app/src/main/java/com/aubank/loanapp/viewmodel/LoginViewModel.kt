@@ -1,8 +1,6 @@
 package com.aubank.loanapp.viewmodel
 
-import android.util.Log
-import androidx.compose.runtime.State
-import com.aubank.loanapp.api.UserRepository
+import android.content.Context
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -10,8 +8,12 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.aubank.loanapp.api.UserRepository
+import com.aubank.loanapp.data.Constants
 import com.aubank.loanapp.data.LoginRequest
 import com.aubank.loanapp.data.LoginResponse
+import com.aubank.loanapp.utils.loadString
+import com.aubank.loanapp.utils.saveString
 import kotlinx.coroutines.launch
 
 class LoginViewModel(private val userRepository: UserRepository) : ViewModel() {
@@ -21,15 +23,19 @@ class LoginViewModel(private val userRepository: UserRepository) : ViewModel() {
 
     /*var username by mutableStateOf("david.john@aubank.in")
     var password by mutableStateOf("22376")*/
-    var username by mutableStateOf("abhishek.raghuwanshi3@aubank.in")
-    var password by mutableStateOf("71811")
-    /*var username by mutableStateOf("")
-    var password by mutableStateOf("")*/
+    /*var username by mutableStateOf("abhishek.raghuwanshi3@aubank.in")
+    var password by mutableStateOf("71811")*/
+    var username by mutableStateOf("")
+    var password by mutableStateOf("")
     var isLoading by mutableStateOf(false)
     var errorMessage by mutableStateOf<String?>(null)
 
     private val _userData = MutableLiveData<LoginResponse>()
     val userData: LiveData<LoginResponse> get() = _userData
+
+    fun onAppear(context: Context) {
+        username = context.loadString(Constants.PREF_NAME_USERNAME) ?: ""
+    }
 
     fun setUserData(user: LoginResponse) {
         _userData.value = user
@@ -49,7 +55,7 @@ class LoginViewModel(private val userRepository: UserRepository) : ViewModel() {
         _navigationEvent.value = NavigationEvent.NavigateToHome
     }
 
-    fun login() {
+    fun login(context: Context) {
         // Login logic
         isLoading = true
         viewModelScope.launch {
@@ -57,6 +63,7 @@ class LoginViewModel(private val userRepository: UserRepository) : ViewModel() {
             val result = userRepository.login(LoginRequest(username, password))
             isLoading = false
             loginState.value = if (result.isSuccess) {
+                context.saveString(Constants.PREF_NAME_USERNAME, username)
                 LoginState.Success(result.getOrThrow())
             } else
                 LoginState.Error(result.exceptionOrNull())

@@ -1,9 +1,7 @@
 package com.aubank.loanapp.utils
 
-import java.text.SimpleDateFormat
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
-import java.util.*
 
 object DateTimeFormatter {
 

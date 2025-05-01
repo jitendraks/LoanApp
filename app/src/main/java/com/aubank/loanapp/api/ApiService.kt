@@ -49,45 +49,6 @@ interface ApiService {
     @POST("Master/getMastersData")
     suspend fun getMasterData(): Response<MasterData>
 
-    /*@Multipart
-    @POST("Loan/Feedback")
-    fun submitFeedback(
-        @Part images: List<MultipartBody.Part>,    // Image part
-        //@Part("FeedbackId") FeedbackId: RequestBody,
-        @Part("EmployeeId") EmployeeId: RequestBody,
-        @Part("VisitDate") VisitDate: RequestBody,
-        @Part("LoanNo") LoanNo: RequestBody,
-        @Part("VisitType") VisitType: RequestBody,
-        @Part("LoanDetailId") LoanDetailId: RequestBody,
-        @Part("VisitDoneId") VisitDoneId: RequestBody,
-        @Part("RelationId") RelationId: RequestBody,
-        @Part("TypeOfLoanId") TypeOfLoanId: RequestBody,
-        @Part("VehicleStatusId") VehicleStatusId: RequestBody,
-        @Part("NameWithMeet") NameWithMeet: RequestBody,
-        @Part("ContactNoWithMeet") ContactNoWithMeet: RequestBody,
-        @Part("BorrowerLivingCurrentAddress") BorrowerLivingCurrentAddress: RequestBody,
-        @Part("NewAddressOfBorrower") NewAddressOfBorrower: RequestBody,
-        @Part("LandMark") LandMark: RequestBody,
-        @Part("CurrentContactNoOfBorrower") CurrentContactNoOfBorrower: RequestBody,
-        @Part("BorrowerJobAddress") BorrowerJobAddress: RequestBody,
-        @Part("JobId") JobId: RequestBody,
-        @Part("FinConditionId") FinConditionId: RequestBody,
-        @Part("IncomeId") IncomeId: RequestBody,
-        @Part("LitigationId") LitigationId: RequestBody,
-        @Part("NewLitigationId") NewLitigationId: RequestBody,
-        @Part("WorkableNonWorkable") WorkableNonWorkable: RequestBody,
-        @Part("ReasonforWorkable") ReasonforWorkable: RequestBody,
-        @Part("NewLitigationReuired") NewLitigationReuired: RequestBody,
-        @Part("AnySettlementProposal") AnySettlementProposal: RequestBody,
-        @Part("ApprovedStatus") ApprovedStatus: RequestBody,
-        //@Part("ApproverId") ApproverId: RequestBody,
-        // @Part("ApproverRemark") ApproverRemark: RequestBody,
-        @Part("CreatedDate") CreatedDate: RequestBody,
-        @Part("Latitude") Latitude: RequestBody,
-        @Part("Longitude") Longitude: RequestBody
-    ): Response<Void>  // Your response type
-*/
-
     @Multipart
     @POST("Loan/Feedback")
     fun submitFeedback(

@@ -21,8 +21,10 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
@@ -96,6 +98,12 @@ private fun GreetingPreview() {
 
 @Composable
 private fun LoginScreen(modifier: Modifier = Modifier, viewModel: LoginViewModel) {
+    val context = LocalContext.current
+
+    LaunchedEffect(Unit) {
+        viewModel.onAppear(context)
+    }
+
     Box(modifier = modifier.fillMaxSize()) {
         Column(
             modifier = Modifier.fillMaxSize().padding(16.dp),
@@ -142,7 +150,7 @@ private fun LoginScreen(modifier: Modifier = Modifier, viewModel: LoginViewModel
                 )
                 Spacer(modifier = Modifier.height(16.dp))
                 Button(
-                    onClick = { viewModel.login() },
+                    onClick = { viewModel.login(context) },
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Text("Sign In")
