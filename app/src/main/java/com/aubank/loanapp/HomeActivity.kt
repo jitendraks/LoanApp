@@ -194,7 +194,7 @@ class HomeActivity : ComponentActivity() {
 
 }
 
-private fun startEmployeeTracking(context: Context, userData: LoginResponse) {
+fun startEmployeeTracking(context: Context, userData: LoginResponse) {
     if (!LocationService.isServiceRunning(context)) {
         val intent = Intent(context, LocationService::class.java)
         intent.putExtra(Constants.USER_DATA, userData)

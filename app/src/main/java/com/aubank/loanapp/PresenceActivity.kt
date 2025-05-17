@@ -1,15 +1,10 @@
 package com.aubank.loanapp
 
-import android.Manifest
-import android.annotation.SuppressLint
-import android.app.Activity
 import android.content.Context
 import android.content.Intent
-import android.content.pm.PackageManager
 import android.location.Geocoder
 import android.location.Location
 import android.os.Bundle
-import android.os.Looper
 import android.text.TextUtils
 import android.util.Log
 import androidx.activity.ComponentActivity
@@ -39,38 +34,33 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults.topAppBarColors
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.core.app.ActivityCompat
-import androidx.core.content.ContextCompat
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.aubank.loanapp.api.UserRepository
 import com.aubank.loanapp.components.ApiProgressBar
+import com.aubank.loanapp.components.GetCurrentLocation
 import com.aubank.loanapp.data.Constants
 import com.aubank.loanapp.data.LoginResponse
 import com.aubank.loanapp.ui.theme.MyApplicationTheme
 import com.aubank.loanapp.viewmodel.ApiState
 import com.aubank.loanapp.viewmodel.NavigationEvent
 import com.aubank.loanapp.viewmodel.PresenceViewModel
-import com.google.android.gms.location.FusedLocationProviderClient
-import com.google.android.gms.location.LocationCallback
-import com.google.android.gms.location.LocationRequest
-import com.google.android.gms.location.LocationResult
-import com.google.android.gms.location.LocationServices
-import com.google.android.gms.location.Priority
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
-import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.withTimeoutOrNull
 import java.io.IOException
 import java.util.Locale
-import kotlin.coroutines.resume
 
 enum class PresenceViewType {
     TYPE_LOGIN,
@@ -82,21 +72,24 @@ val presenceViewModel: PresenceViewModel = PresenceViewModel(UserRepository())
 class PresenceActivity : ComponentActivity() {
 
     private lateinit var userData: LoginResponse
-    private lateinit var fusedLocationClient: FusedLocationProviderClient
-    private lateinit var locationCallback: LocationCallbackImpl
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         userData = intent.getParcelableExtra(Constants.USER_DATA)!!
-        fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
         enableEdgeToEdge()
         setContent {
             MyApplicationTheme {
                 PresenceScreen(
-                    presenceViewModel.isLoading,
                     userData,
-                    modifier = Modifier.fillMaxWidth())
+                    modifier = Modifier.fillMaxWidth(),
+                    startEmployeeTracking = {
+                        startEmployeeTracking(this, userData)
+                    },
+                    stopEmployeeTracking = {
+                        stopEmployeeTracking()
+                    }
+                )
             }
         }
 
@@ -129,62 +122,9 @@ class PresenceActivity : ComponentActivity() {
                 }
 
                 null -> {
+                    presenceViewModel.isLoading = false
                     Log.d("PresenceActivity", "attendanceApiState is null")
                     return@observe
-                }
-            }
-        }
-
-        presenceViewModel.fetchAttendanceApiState.observe(this) { event ->
-            if (event == null) {
-                Log.d("PresenceActivity", "fetchAttendanceApiState is null")
-                return@observe
-            }
-
-            when (event) {
-                is PresenceViewModel.FetchAttendanceState.Success -> {
-                    presenceViewModel.isLoading = false
-                    val presenceResponse = event.attendanceResponse
-                    presenceViewModel.presenceResponse.value = presenceResponse
-
-                    try {
-                        if (TextUtils.isEmpty(presenceResponse?.startTime)) {
-                            getLocation(this) { location, address ->
-                                presenceViewModel.isLoading = false
-                                if (location != null && address != null) {
-                                    presenceViewModel.setInLocation(location, address)
-                                } else {
-                                    presenceViewModel.errorMessage = "Could not fetch location"
-                                }
-                            }
-                        } else if (TextUtils.isEmpty(presenceResponse?.endTime)) {
-                            startEmployeeTracking(context = this, userData = userData)
-
-                            getLocation(this) { location, address ->
-                                presenceViewModel.isLoading = false
-                                if (location != null && address != null) {
-                                    presenceViewModel.setOutLocation(location, address)
-                                } else {
-                                    presenceViewModel.errorMessage = "Could not fetch location"
-                                }
-                            }
-                        } else {
-                            stopEmployeeTracking()
-                        }
-                    } catch (e: Exception) {
-                        Log.e("PresenceActivity", "Exception during location handling", e)
-                        presenceViewModel.isLoading = false
-                        presenceViewModel.errorMessage = "Failed due to internal error"
-                    }
-                }
-
-                is PresenceViewModel.FetchAttendanceState.Error -> {
-                    presenceViewModel.isLoading = false
-                    presenceViewModel.errorMessage = "Fetch presence failed"
-                }
-
-                PresenceViewModel.FetchAttendanceState.Loading -> {
-                    presenceViewModel.isLoading = true
                 }
             }
         }
@@ -195,9 +135,6 @@ class PresenceActivity : ComponentActivity() {
         super.onDestroy()
         try {
             presenceViewModel.resetApiResponseState()
-            if (::locationCallback.isInitialized) {
-                fusedLocationClient.removeLocationUpdates(locationCallback)
-            }
         } catch (e: Exception) {
             Log.e("PresenceActivity", "Failed to remove location updates", e)
         }
@@ -221,158 +158,25 @@ class PresenceActivity : ComponentActivity() {
         presenceViewModel.fetchAttendance(userData.employeeId)
     }
 
-    private fun getLocation(
-        activity: Activity,
-        callback: (Location?, String?) -> Unit
-    ) {
-        presenceViewModel.isLoading = true
-
-        if (ContextCompat.checkSelfPermission(activity, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED &&
-            ActivityCompat.checkSelfPermission(activity, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(
-                activity,
-                arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION),
-                Constants.REQUEST_LOCATION_PERMISSION
-            )
-            return
-        }
-
-        CoroutineScope(Dispatchers.Main).launch {
-            val locationResult = withTimeoutOrNull(10_000) {
-                requestLocationOnce(activity)
-            }
-
-            if (locationResult != null) {
-                presenceViewModel.isLoading = false
-                callback(locationResult.first, locationResult.second)
-            } else {
-                presenceViewModel.isLoading = false
-                callback(null, "Location timeout or unavailable")
-            }
-        }
-    }
-
-    private suspend fun requestLocationOnce(
-        context: Context
-    ): Pair<Location, String>? = suspendCancellableCoroutine { cont ->
-        val fusedLocationClient = LocationServices.getFusedLocationProviderClient(context)
-
-        val locationCallback = object : LocationCallback() {
-            override fun onLocationResult(locationResult: LocationResult) {
-                super.onLocationResult(locationResult)
-                fusedLocationClient.removeLocationUpdates(this)
-
-                val location = locationResult.lastLocation
-                if (location != null) {
-                    CoroutineScope(Dispatchers.IO).launch {
-                        val address = try {
-                            val geocoder = Geocoder(context, Locale.getDefault())
-                            val addresses = geocoder.getFromLocation(location.latitude, location.longitude, 1)
-                            addresses?.firstOrNull()?.getAddressLine(0) ?: "Address not found"
-                        } catch (e: Exception) {
-                            Log.e("Geocoder", "Failed to fetch address", e)
-                            "Error: Could not retrieve address"
-                        }
-                        withContext(Dispatchers.Main) {
-                            if (cont.isActive) cont.resume(Pair(location, address))
-                        }
-                    }
-                } else {
-                    if (cont.isActive) cont.resume(null)
-                }
-            }
-        }
-
-        val request = LocationRequest.create().apply {
-            interval = 10000
-            fastestInterval = 5000
-            priority = Priority.PRIORITY_HIGH_ACCURACY
-            numUpdates = 1
-        }
-
-        try {
-            // Explicit permission check
-            if (ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED ||
-                ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
-
-                fusedLocationClient.requestLocationUpdates(request, locationCallback, Looper.getMainLooper())
-                cont.invokeOnCancellation {
-                    fusedLocationClient.removeLocationUpdates(locationCallback)
-                }
-            } else {
-                Log.e("Location", "Permission denied")
-                cont.resume(null)
-            }
-        } catch (e: SecurityException) {
-            Log.e("Location", "SecurityException: ${e.message}", e)
-            cont.resume(null)
-        }
-    }
-
-    private class LocationCallbackImpl(
-        val context: Context,
-        val fusedLocationClient: FusedLocationProviderClient,
-        val callback: (location: Location?, address: String?) -> Unit
-    ) : LocationCallback() {
-
-        override fun onLocationResult(locationResult: LocationResult) {
-            super.onLocationResult(locationResult)
-            val location = locationResult.lastLocation
-            // Handle the location data here
-            if (location != null) {
-                getAddressAsync(context, location.latitude, location.longitude) { address ->
-                    // Use the result
-                    callback.invoke(location, address)
-                }
-            } else {
-                callback.invoke(null, null)
-            }
-            fusedLocationClient.removeLocationUpdates(this)
-        }
-    }
-}
-
-@SuppressLint("CoroutineCreationDuringComposition")
-fun getAddressAsync(
-    context: Context,
-    lat: Double,
-    lng: Double,
-    callback: (String) -> Unit
-) {
-    val contextRef = java.lang.ref.WeakReference(context)
-    CoroutineScope(Dispatchers.IO).launch {
-        val currentContext = contextRef.get() // Get the current context
-        if (currentContext != null) {
-            try {
-                val geocoder = Geocoder(context, Locale.getDefault())
-                    val addresses = geocoder.getFromLocation(lat, lng, 1)
-                    val address = addresses?.firstOrNull()?.getAddressLine(0) ?: ""
-                    withContext(Dispatchers.Main) {
-                        callback(address)
-                    }
-            } catch (e: IOException) {
-                Log.e("Geocoder", "Failed to fetch address", e)
-                withContext(Dispatchers.Main) {
-                    callback("Error: Could not retrieve address") // Or a more user-friendly message
-                }
-            }
-        } else {
-            // Handle the case where the context is no longer available (e.g., Activity destroyed)
-            withContext(Dispatchers.Main) {
-                callback("Error: Context no longer available")
-            }
-        }
-    }
 }
 
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun PresenceScreen(isLoading: Boolean, userData: LoginResponse, modifier: Modifier) {
+private fun PresenceScreen(userData: LoginResponse,
+                           modifier: Modifier,
+                           startEmployeeTracking : () -> Unit,
+                           stopEmployeeTracking : () -> Unit) {
+    val isLocationLoading = remember { mutableStateOf(false) }
+    val isStartTime = remember { mutableStateOf(true) }
+    val shouldGetLocation = remember { mutableStateOf(false) }
+    val context: Context = LocalContext.current
+
     LaunchedEffect(Unit) {
         presenceViewModel.isLoading = true
         presenceViewModel.fetchAttendance(userData.employeeId)
     }
+
 
     Scaffold(topBar = {
         TopAppBar(
@@ -410,11 +214,88 @@ private fun PresenceScreen(isLoading: Boolean, userData: LoginResponse, modifier
                         presenceViewType = PresenceViewType.TYPE_LOGOUT, userData)
                 }
             }
-            if (isLoading) {
+            if (presenceViewModel.isLoading || isLocationLoading.value) {
                 ApiProgressBar(modifier = Modifier.align(Alignment.Center))
+            }
+
+            key(shouldGetLocation.value) {
+                if (shouldGetLocation.value) {
+                    isLocationLoading.value = true
+                    GetCurrentLocation(
+                        acceptableLastLocationAgeMillis = 15 * 60 * 1000L,
+                        onLocationResult = { location ->
+                            if (location != null) {
+                                getAddressFromLatLng(
+                                    context = context,
+                                    location = location,
+                                    onAddressResolved = { address ->
+                                        shouldGetLocation.value = false
+                                        isLocationLoading.value = false
+                                        if (isStartTime.value) {
+                                            presenceViewModel.setInLocation(location, address)
+                                        } else {
+                                            presenceViewModel.setOutLocation(location, address)
+                                        }
+                                    },
+                                )
+                            } else {
+                                isLocationLoading.value = false
+                            }
+                        },
+                        locationRequestTimeoutMillis = 10 * 1000
+                    )
+                }
             }
         }
     })
+
+    presenceViewModel.fetchAttendanceApiState.observe(LocalLifecycleOwner.current) { event ->
+        if (event == null) {
+            Log.d("PresenceActivity", "fetchAttendanceApiState is null")
+            presenceViewModel.isLoading = false
+            shouldGetLocation.value = false
+            return@observe
+        }
+
+        when (event) {
+            is PresenceViewModel.FetchAttendanceState.Success -> {
+                presenceViewModel.isLoading = false
+                val presenceResponse = event.attendanceResponse
+                presenceViewModel.presenceResponse.value = presenceResponse
+
+                try {
+                    if (TextUtils.isEmpty(presenceResponse.startTime)) {
+                        shouldGetLocation.value = true
+                        isStartTime.value = true
+
+                    } else if (TextUtils.isEmpty(presenceResponse.endTime)) {
+                        shouldGetLocation.value = true
+                        isStartTime.value = false
+                        startEmployeeTracking.invoke()
+                    } else {
+                        shouldGetLocation.value = false
+                        isStartTime.value = true
+                        stopEmployeeTracking.invoke()
+                    }
+                } catch (e: Exception) {
+                    Log.e("PresenceActivity", "Exception during location handling", e)
+                    shouldGetLocation.value = false
+                    presenceViewModel.isLoading = false
+                    presenceViewModel.errorMessage = "Failed due to internal error"
+                }
+            }
+
+            is PresenceViewModel.FetchAttendanceState.Error -> {
+                shouldGetLocation.value = true
+                presenceViewModel.isLoading = false
+                presenceViewModel.errorMessage = "Fetch presence failed"
+            }
+
+            PresenceViewModel.FetchAttendanceState.Loading -> {
+                presenceViewModel.isLoading = true
+            }
+        }
+    }
 }
 
 @Composable
@@ -478,12 +359,40 @@ private fun PresenceView(
         }
 }
 
+
+private fun getAddressFromLatLng(context: Context, location: Location, onAddressResolved: (String) -> Unit) {
+    CoroutineScope(Dispatchers.IO).launch {
+        try {
+            if (!Geocoder.isPresent()) {
+                withContext(Dispatchers.Main) {
+                    onAddressResolved("Geocoder service not available")
+                }
+                return@launch
+            }
+
+            val address = withTimeoutOrNull(10 * 1000) { // 3-second timeout
+                val geocoder = Geocoder(context, Locale.getDefault())
+                val addresses = geocoder.getFromLocation(location.latitude, location.longitude, 1)
+                addresses?.firstOrNull()?.getAddressLine(0)
+            } ?: "Timeout: Unable to get address"
+
+            withContext(Dispatchers.Main) {
+                onAddressResolved(address)
+            }
+        } catch (e: IOException) {
+            Log.e("Geocoder", "Geocoding failed", e)
+            withContext(Dispatchers.Main) {
+                onAddressResolved("Error: Could not retrieve address")
+            }
+        }
+    }
+}
+
 @Preview(showBackground = true)
 @Composable
 private fun GreetingPreview() {
     MyApplicationTheme {
-        PresenceScreen(isLoading = false,
-            LoginResponse(
+        PresenceScreen(LoginResponse(
             "1",
                 "1",
                 "Jitendra Sharma",
@@ -497,6 +406,6 @@ private fun GreetingPreview() {
                 0,
                 true,
                 applicationAlloted = 0
-        ), modifier = Modifier.fillMaxSize())
+        ), modifier = Modifier.fillMaxSize(), { }, { })
     }
 }

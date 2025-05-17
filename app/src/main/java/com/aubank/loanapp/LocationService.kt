@@ -8,6 +8,7 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.location.Address
 import android.location.Geocoder
+import android.location.Location
 import android.os.IBinder
 import android.os.Looper
 import android.util.Log
@@ -24,6 +25,9 @@ import com.google.android.gms.location.Priority
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
+import java.io.IOException
 import java.time.LocalDateTime
 import java.util.Locale
 
@@ -93,38 +97,56 @@ class LocationService : Service() {
                 val employeeId: String = userData.employeeId
                 val lat = location.latitude
                 val long = location.longitude
-                val address = getAddressFromLatLng(context, lat, long)
-                val trackingRequest = TrackingRequest(
-                    latLongTime = DateTimeFormatter.formatDateTime(LocalDateTime.now()),
-                    logDate = DateTimeFormatter.formatDate(LocalDateTime.now()),
-                    latitude = lat.toString(),
-                    longitude = long.toString(),
-                    employeeId = Integer.valueOf(employeeId),
-                    address = address ?: ""
-                )
-                CoroutineScope(Dispatchers.Default).launch {
-                    val result = UserRepository().trackEmployee(trackingRequest = trackingRequest)
-                    if (result.isSuccess) {
-                        Log.i(TAG, "Track data sent successfully")
-                    } else if (result.isFailure){
-                        Log.i(TAG, "Error in sending employee tracking data")
+                getAddressFromLatLng(context, location = location, onAddressResolved = {
+                    address ->
+                    val trackingRequest = TrackingRequest(
+                        latLongTime = DateTimeFormatter.formatDateTime(LocalDateTime.now()),
+                        logDate = DateTimeFormatter.formatDate(LocalDateTime.now()),
+                        latitude = lat.toString(),
+                        longitude = long.toString(),
+                        employeeId = Integer.valueOf(employeeId),
+                        address = address ?: ""
+                    )
+
+                    CoroutineScope(Dispatchers.Default).launch {
+                        val result = UserRepository().trackEmployee(trackingRequest = trackingRequest)
+                        if (result.isSuccess) {
+                            Log.i(TAG, "Track data sent successfully")
+                        } else if (result.isFailure){
+                            Log.i(TAG, "Error in sending employee tracking data")
+                        }
                     }
-                }
+                })
+
+
             }
         }
 
-        private fun getAddressFromLatLng(context: Context, latitude: Double, longitude: Double): String? {
-            val geocoder = Geocoder(context, Locale.getDefault())
-            val addresses: List<Address>? = geocoder.getFromLocation(latitude, longitude, 1)
+        private fun getAddressFromLatLng(context: Context, location: Location, onAddressResolved: (String) -> Unit) {
+            CoroutineScope(Dispatchers.IO).launch {
+                try {
+                    if (!Geocoder.isPresent()) {
+                        withContext(Dispatchers.Main) {
+                            onAddressResolved("Geocoder service not available")
+                        }
+                        return@launch
+                    }
 
-            if (!addresses.isNullOrEmpty()) {
-                val address = addresses[0]
-                val addressString = address.getAddressLine(0)
-                Log.d("Address", addressString)
-                return addressString
-            } else {
-                Log.e("Address", "Unable to get address from latitude and longitude")
-                return null
+                    val address = withTimeoutOrNull(3000) { // 3-second timeout
+                        val geocoder = Geocoder(context, Locale.getDefault())
+                        val addresses = geocoder.getFromLocation(location.latitude, location.longitude, 1)
+                        addresses?.firstOrNull()?.getAddressLine(0)
+                    } ?: "Timeout: Unable to get address"
+
+                    withContext(Dispatchers.Main) {
+                        onAddressResolved(address)
+                    }
+                } catch (e: IOException) {
+                    Log.e("Geocoder", "Geocoding failed", e)
+                    withContext(Dispatchers.Main) {
+                        onAddressResolved("Error: Could not retrieve address")
+                    }
+                }
             }
         }
     }

@@ -1,6 +1,9 @@
 package com.aubank.loanapp.viewmodel
 
+import android.content.Context
+import android.location.Geocoder
 import android.location.Location
+import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -8,13 +11,19 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.aubank.loanapp.BuildConfig
 import com.aubank.loanapp.api.UserRepository
 import com.aubank.loanapp.data.AttendanceRequest
 import com.aubank.loanapp.data.EmployeeIdRequest
 import com.aubank.loanapp.data.FetchAttendanceResponse
 import com.aubank.loanapp.utils.DateTimeFormatter
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.io.IOException
 import java.time.LocalDateTime
+import java.util.Locale
 
 class PresenceViewModel(private val userRepository: UserRepository) : ViewModel() {
     private val _navigationEvent = MutableLiveData<NavigationEvent>()
@@ -25,14 +34,17 @@ class PresenceViewModel(private val userRepository: UserRepository) : ViewModel(
     var inAddress = MutableLiveData("")
     var outAddress = MutableLiveData("")
     var presenceResponse: MutableLiveData<FetchAttendanceResponse> = MutableLiveData<FetchAttendanceResponse>(null)
-    private var inLocation by mutableStateOf(Pair<String, String>("", ""))
-    private var outLocation by mutableStateOf(Pair<String, String>("", ""))
+    private var inLocation by mutableStateOf(Pair("", ""))
+    private var outLocation by mutableStateOf(Pair("", ""))
 
     var isLoading by mutableStateOf(true)
     var errorMessage by mutableStateOf<String?>(null)
 
     val attendanceApiState = MutableLiveData<ApiState?>()
     val fetchAttendanceApiState = MutableLiveData<FetchAttendanceState?>()
+
+    private val _address = MutableLiveData<String?>()
+    val address: LiveData<String?> = _address
 
     fun navigateBack() {
         _navigationEvent.value = NavigationEvent.NavigateBack
@@ -72,10 +84,11 @@ class PresenceViewModel(private val userRepository: UserRepository) : ViewModel(
     }
 
     fun markAttendance(employeeId: String, email: String, mode: Boolean) {
+        val appVersion = BuildConfig.VERSION_NAME
         val attendanceRequest = AttendanceRequest(
             attendanceTime = DateTimeFormatter.formatDateTime(LocalDateTime.now()),
             logDate = DateTimeFormatter.formatDate(LocalDateTime.now()),
-            appVersion = "1.0.0.0",
+            appVersion = appVersion,
             latLong = if (mode) "${inLocation.first},${inLocation.second}" else "${outLocation.first},${outLocation.second}",
             mode = if (mode) "start" else "end",
             location = (if (mode) inAddress.value else outAddress.value) ?: "",
@@ -105,4 +118,5 @@ class PresenceViewModel(private val userRepository: UserRepository) : ViewModel(
         fetchAttendanceApiState.value = null
         attendanceApiState.value = null
     }
+
 }
