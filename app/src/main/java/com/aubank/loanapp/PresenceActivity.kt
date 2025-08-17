@@ -47,10 +47,11 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.aubank.loanapp.api.UserRepository
 import com.aubank.loanapp.components.ApiProgressBar
+import com.aubank.loanapp.components.EnhancedTopAppBar
 import com.aubank.loanapp.components.GetCurrentLocation
 import com.aubank.loanapp.data.Constants
 import com.aubank.loanapp.data.LoginResponse
-import com.aubank.loanapp.ui.theme.MyApplicationTheme
+import com.aubank.loanapp.ui.theme.LoanAppTheme
 import com.aubank.loanapp.viewmodel.ApiState
 import com.aubank.loanapp.viewmodel.NavigationEvent
 import com.aubank.loanapp.viewmodel.PresenceViewModel
@@ -79,7 +80,7 @@ class PresenceActivity : ComponentActivity() {
         userData = intent.getParcelableExtra(Constants.USER_DATA)!!
         enableEdgeToEdge()
         setContent {
-            MyApplicationTheme {
+            LoanAppTheme {
                 PresenceScreen(
                     userData,
                     modifier = Modifier.fillMaxWidth(),
@@ -94,7 +95,7 @@ class PresenceActivity : ComponentActivity() {
         }
 
         presenceViewModel.navigationEvent.observe(this) {
-            event ->
+                event ->
             when (event) {
                 NavigationEvent.NavigateBack -> {
                     finish()
@@ -179,19 +180,10 @@ private fun PresenceScreen(userData: LoginResponse,
 
 
     Scaffold(topBar = {
-        TopAppBar(
-            title = { Text("Set Presence") },
-            colors = topAppBarColors(
-                containerColor = Color.Blue, // Set your desired background color here
-                titleContentColor = Color.White,
-            ),
-            navigationIcon = {
-                IconButton(onClick = { presenceViewModel.navigateBack() }) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "Back"
-                    )
-                }
+        EnhancedTopAppBar(
+            titleText = "Set Presence",
+            onNavigateBack = {
+                presenceViewModel.navigateBack()
             }
         )
     }, content = {
@@ -307,56 +299,56 @@ private fun PresenceView(
     userData: LoginResponse) {
 
     Card(
-            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-            shape = RoundedCornerShape(8.dp),
-            modifier = modifier.padding(16.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+        shape = RoundedCornerShape(8.dp),
+        modifier = modifier.padding(16.dp)
+    ) {
+        Column(
+            verticalArrangement = Arrangement.Top,
+            modifier = modifier.fillMaxWidth()
         ) {
-            Column(
-                verticalArrangement = Arrangement.Top,
-                modifier = modifier.fillMaxWidth()
-            ) {
-                Text(
-                    text = if (presenceViewType == PresenceViewType.TYPE_LOGIN) "In Time" else "Out Time",
-                    style = MaterialTheme.typography.headlineMedium,
-                    modifier = Modifier
-                        .align(Alignment.CenterHorizontally),
-                    textAlign = TextAlign.Left
-                )
-                // Divider
-                HorizontalDivider(
-                    thickness = 1.dp,
-                    color = Color.Gray
-                )
+            Text(
+                text = if (presenceViewType == PresenceViewType.TYPE_LOGIN) "In Time" else "Out Time",
+                style = MaterialTheme.typography.headlineMedium,
+                modifier = Modifier
+                    .align(Alignment.CenterHorizontally),
+                textAlign = TextAlign.Left
+            )
+            // Divider
+            HorizontalDivider(
+                thickness = 1.dp,
+                color = Color.Gray
+            )
 
-                OutlinedTextField(
-                    value = address,
-                    onValueChange = {  },
-                    label = { Text("Address") },
-                    singleLine = false,
-                    enabled = false,
-                    modifier = Modifier.fillMaxWidth()
-                )
-                OutlinedTextField(
-                    value = time,
-                    onValueChange = {  },
-                    label = { Text("Time") },
-                    singleLine = false,
-                    enabled = false,
-                    modifier = Modifier.fillMaxWidth()
-                )
+            OutlinedTextField(
+                value = address,
+                onValueChange = {  },
+                label = { Text("Address") },
+                singleLine = false,
+                enabled = false,
+                modifier = Modifier.fillMaxWidth()
+            )
+            OutlinedTextField(
+                value = time,
+                onValueChange = {  },
+                label = { Text("Time") },
+                singleLine = false,
+                enabled = false,
+                modifier = Modifier.fillMaxWidth()
+            )
 
-                if ((presenceViewType == PresenceViewType.TYPE_LOGIN
-                            && TextUtils.isEmpty(presenceViewModel.presenceResponse.value?.startTime))
-                    || (presenceViewType == PresenceViewType.TYPE_LOGOUT
-                            && TextUtils.isEmpty(presenceViewModel.presenceResponse.value?.endTime))
-                    ){
-                    Button( onClick = { presenceViewModel.markAttendance(userData.employeeId, userData.emailAddress, presenceViewType == PresenceViewType.TYPE_LOGIN)},
-                        modifier = Modifier.fillMaxWidth()) {
-                        Text(text = if (presenceViewType == PresenceViewType.TYPE_LOGIN) "Start Duty" else "Stop Duty")
-                    }
+            if ((presenceViewType == PresenceViewType.TYPE_LOGIN
+                        && TextUtils.isEmpty(presenceViewModel.presenceResponse.value?.startTime))
+                || (presenceViewType == PresenceViewType.TYPE_LOGOUT
+                        && TextUtils.isEmpty(presenceViewModel.presenceResponse.value?.endTime))
+            ){
+                Button( onClick = { presenceViewModel.markAttendance(userData.employeeId, userData.emailAddress, presenceViewType == PresenceViewType.TYPE_LOGIN)},
+                    modifier = Modifier.fillMaxWidth()) {
+                    Text(text = if (presenceViewType == PresenceViewType.TYPE_LOGIN) "Start Duty" else "Stop Duty")
                 }
             }
         }
+    }
 }
 
 
@@ -391,21 +383,21 @@ private fun getAddressFromLatLng(context: Context, location: Location, onAddress
 @Preview(showBackground = true)
 @Composable
 private fun GreetingPreview() {
-    MyApplicationTheme {
+    LoanAppTheme  {
         PresenceScreen(LoginResponse(
             "1",
-                "1",
-                "Jitendra Sharma",
-                "jitendrasharma407@gmail.com",
-                "Admin",
-                "30",
-                50000,
-                100000,
-                true,
-                0,
-                0,
-                true,
-                applicationAlloted = 0
+            "1",
+            "Jitendra Sharma",
+            "jitendrasharma407@gmail.com",
+            "Admin",
+            "30",
+            50000,
+            100000,
+            true,
+            0,
+            0,
+            true,
+            applicationAlloted = 0
         ), modifier = Modifier.fillMaxSize(), { }, { })
     }
 }

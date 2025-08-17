@@ -35,7 +35,7 @@ import androidx.compose.ui.unit.dp
 import com.aubank.loanapp.api.UserRepository
 import com.aubank.loanapp.components.ApiProgressBar
 import com.aubank.loanapp.data.Constants
-import com.aubank.loanapp.ui.theme.MyApplicationTheme
+import com.aubank.loanapp.ui.theme.LoanAppTheme
 import com.aubank.loanapp.viewmodel.ApiState
 import com.aubank.loanapp.viewmodel.ChangePasswordViewModel
 import com.aubank.loanapp.viewmodel.NavigationEvent
@@ -47,7 +47,7 @@ class ChangePasswordActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            MyApplicationTheme {
+            LoanAppTheme {
                 ChangePasswordScreen(viewModel = viewModel)
             }
         }
@@ -87,7 +87,7 @@ class ChangePasswordActivity : ComponentActivity() {
 @Preview(showBackground = true)
 @Composable
 private fun Greeting(modifier: Modifier = Modifier) {
-    MyApplicationTheme {
+    LoanAppTheme {
         ChangePasswordScreen(viewModel = ChangePasswordViewModel(UserRepository()))
     }
 }

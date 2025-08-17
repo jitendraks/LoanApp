@@ -14,6 +14,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.snapping.SnapPosition
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -45,7 +46,7 @@ import com.aubank.loanapp.api.UserRepository
 import com.aubank.loanapp.components.ApiProgressBar
 import com.aubank.loanapp.data.Constants
 import com.aubank.loanapp.data.LoginResponse
-import com.aubank.loanapp.ui.theme.MyApplicationTheme
+import com.aubank.loanapp.ui.theme.LoanAppTheme
 import com.aubank.loanapp.viewmodel.HomeActivityViewModel
 import com.aubank.loanapp.viewmodel.NavigationEvent
 import com.google.android.gms.location.LocationCallback
@@ -53,6 +54,7 @@ import com.google.android.gms.location.LocationRequest
 import com.google.android.gms.location.LocationResult
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
+import org.intellij.lang.annotations.JdkConstants.HorizontalAlignment
 
 class HomeActivity : ComponentActivity() {
     private val viewModel: HomeActivityViewModel = HomeActivityViewModel(UserRepository())
@@ -66,7 +68,7 @@ class HomeActivity : ComponentActivity() {
         userData = intent.getParcelableExtra(Constants.USER_DATA)!!
 
         setContent {
-            MyApplicationTheme {
+            LoanAppTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
                     DashboardScreen(
                         modifier = Modifier.padding(innerPadding),
@@ -209,19 +211,22 @@ private fun DashboardScreen(
     userData: LoginResponse
 ) {
     val context = LocalContext.current
+    // Safely cast to Activity
+    val activity = context as? ComponentActivity
+
     val pendingApprovals = "Pending Approvals" to {
-        val intent = Intent(context, ListPendingApprovalsActivity::class.java)
+        val intent = Intent(activity, ListPendingApprovalsActivity::class.java)
         intent.putExtra(Constants.USER_DATA, userData)
         context.startActivity(intent)
     }
     val assignedApplications = "Assigned Applications (${userData.applicationAlloted})" to {
-        val intent = Intent(context, ListAssignedAppsActivity::class.java)
+        val intent = Intent(activity, ListAssignedAppsActivity::class.java)
         intent.putExtra(Constants.USER_DATA, userData)
         context.startActivity(intent)
     }
 
     val markAttendance = "Mark Attendance" to {
-        val intent = Intent(context, PresenceActivity::class.java)
+        val intent = Intent(activity, PresenceActivity::class.java)
         intent.putExtra(Constants.USER_DATA, userData)
         context.startActivity(intent)
     }
@@ -240,8 +245,10 @@ private fun DashboardScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(16.dp)
+                .padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            Text(text = "App Version : ${BuildConfig.VERSION_NAME}")
             TargetView(
                 modifier = Modifier
                     .fillMaxWidth()

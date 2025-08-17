@@ -5,11 +5,12 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -19,44 +20,77 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults.topAppBarColors
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import com.aubank.loanapp.api.UserRepository
 import com.aubank.loanapp.components.LabelLineValue
+import com.aubank.loanapp.components.RadioButtonDialog
 import com.aubank.loanapp.data.Constants
+import com.aubank.loanapp.data.MasterData
 import com.aubank.loanapp.data.PendingApp
-import com.aubank.loanapp.ui.theme.MyApplicationTheme
+import com.aubank.loanapp.data.VisitDone
+import com.aubank.loanapp.ui.theme.LoanAppTheme
+import com.aubank.loanapp.viewmodel.AssignedAppsViewModel
 import com.aubank.loanapp.viewmodel.LoanDetailsViewModel
 import com.aubank.loanapp.viewmodel.NavigationEvent
 
-
 class LoanDetailsActivity : ComponentActivity() {
-    private val loanDetailsViewModel: LoanDetailsViewModel = LoanDetailsViewModel(UserRepository())
+    private val viewModel = LoanDetailsViewModel(
+        userRepository = UserRepository()
+    )
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val loanAppDetails: PendingApp = intent.getParcelableExtra(Constants.LOAN_APP)!!
-        loanDetailsViewModel.userData = intent.getParcelableExtra(Constants.USER_DATA)!!
         enableEdgeToEdge()
+        val masterData = (application as LoanApplication).getMasterData()!!
+        val app: PendingApp = intent.getParcelableExtra(Constants.LOAN_APP)!!
+        viewModel.userData = intent.getParcelableExtra(Constants.USER_DATA)!!
+
         setContent {
-            MyApplicationTheme {
-                LoanDetailsScreenActivity(
-                    loanDetailsViewModel,
-                    loanAppDetails
-                )
+            LoanAppTheme {
+                LoanDetailsScreenActivity(masterData, viewModel, app)
             }
         }
 
-        loanDetailsViewModel.navigationEvent.observe(this)
+        viewModel.navigationEvent.observe(this) { event ->
+            if (event == NavigationEvent.NavigateBack) finish()
+        }
+
+        viewModel.fetchLastFeedbackDataApiState.observe(this)
         { event ->
             when (event) {
-                NavigationEvent.NavigateBack -> {
-                    finish()
+                is AssignedAppsViewModel.FetchLastFeedbackDataApiState.Success -> {
+
+                    val intent = Intent(this, FeedbackFollowupActivity::class.java)
+                    intent.putExtra(Constants.LOAN_APP, event.pendingApp)
+                    intent.putExtra(Constants.USER_DATA, viewModel.userData)
+                    intent.putExtra(Constants.VISIT_DONE_ID, event.visitDoneId)
+                    intent.putExtra(Constants.PENDING_APPROVAL_FEEDBACK_DATA, event.feedbackData)
+                    startActivity(intent)
+                    viewModel.isLoading = false
                 }
-                else -> {}
+
+                is AssignedAppsViewModel.FetchLastFeedbackDataApiState.Error -> {
+                    val intent = Intent(this, FeedbackActivity::class.java)
+                    intent.putExtra(Constants.LOAN_APP, event.pendingApp)
+                    intent.putExtra(Constants.USER_DATA, viewModel.userData)
+                    intent.putExtra(Constants.VISIT_DONE_ID, event.visitDoneId)
+                    startActivity(intent)
+                    viewModel.isLoading = false
+                }
+
+                is AssignedAppsViewModel.FetchLastFeedbackDataApiState.Loading -> {
+
+                }
             }
         }
     }
@@ -65,189 +99,186 @@ class LoanDetailsActivity : ComponentActivity() {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun LoanDetailsScreenActivity(
-    loanDetailsViewModel: LoanDetailsViewModel,
-    loanAppDetails: PendingApp
+    masterData: MasterData,
+    viewModel: LoanDetailsViewModel,
+    loanApp: PendingApp
 ) {
     val context = LocalContext.current
-    Scaffold(topBar = {
-        TopAppBar(
-            title = { Text(loanAppDetails.caseNo) },
-            colors = topAppBarColors(
-                containerColor = Color.Blue, // Set your desired background color here
-                titleContentColor = Color.White,
-            ),
-            navigationIcon = {
-                IconButton(onClick = { loanDetailsViewModel.navigateBack() }) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "Back"
-                    )
-                }
+    var showDialog by remember { mutableStateOf(false) }
+    var selectedOption by remember { mutableStateOf(masterData.visitDones.first()) }
+
+    if (showDialog) {
+        RadioButtonDialog(
+            title = "Select Feedback Option",
+            options = masterData.visitDones,
+            selectedOption = selectedOption,
+            onOptionSelected = {
+                selectedOption = it as VisitDone
+                viewModel.fetchLastFeedbackData(loanApp, it.visitDoneId)
+                showDialog = false
             },
-            actions = {
-                TextButton(
-                    onClick = {
-                        val intent = Intent(context, FeedbackActivity::class.java)
-                        intent.putExtra(Constants.LOAN_APP, loanAppDetails)
-                        intent.putExtra(Constants.USER_DATA, loanDetailsViewModel.userData)
-                        context.startActivity(intent)
-                        loanDetailsViewModel.navigateBack()
+            onDismiss = { showDialog = false }
+        )
+    }
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text(loanApp.caseNo) },
+                navigationIcon = {
+                    IconButton(
+                        onClick = { viewModel.navigateBack() }
+                    ) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Back",
+                            tint = Color.White
+                        )
                     }
-                ) {
-                    Text(text = "Feedback")
+                },
+                actions = {
+                    TextButton(onClick = {
+                        showDialog = true
+                    }) {
+                        Text("Feedback")
+                    }
                 }
-            }
-        )
-    }, content = { innerPadding ->
+            )
+        }
+    ) { padding ->
         LoanDetailsScreen(
-            modifier = Modifier.padding(innerPadding),
-            loanAppDetails
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding),
+            loanApp = loanApp
         )
-    })
+    }
 }
 
 @Composable
-private fun LoanDetailsScreen(modifier: Modifier, pendingApp: PendingApp) {
-    val scrollState = rememberScrollState()
-    Column(modifier = modifier
-        .fillMaxSize()
-        .verticalScroll(scrollState)) {
-        pendingApp.caseType?.let { LabelLineValue(label = "Case Type", value = it) }
-        pendingApp.loanAmount?.let { LabelLineValue(label = "Loan Amount", value = it) }
-        pendingApp.borrowerName?.let { LabelLineValue(label = "Borrower Name", value = it) }
-        pendingApp.borrowerAddress?.let { LabelLineValue(label = "Borrower Address", value = it) }
-        pendingApp.borrowerContactNo?.let {
-            LabelLineValue(
-                label = "Borrower ContactNo",
-                value = it
-            )
-        }
-        pendingApp.coBorrowerName?.let { LabelLineValue(label = "Co-borrower Name", value = it) }
-        pendingApp.coBorrowerAddress?.let {
-            LabelLineValue(
-                label = "Co-borrower Address",
-                value = it
-            )
-        }
-        pendingApp.coBorrowerContactNo?.let {
-            LabelLineValue(
-                label = "Co-borrower ContactNo",
-                value = it
-            )
-        }
-        pendingApp.guarantorName?.let { LabelLineValue(label = "Guarantor Name", value = it) }
-        pendingApp.guarantorBorrowerAddress?.let {
-            LabelLineValue(
-                label = "Guarantor Address",
-                value = it
-            )
-        }
-        pendingApp.guarantorBorrowerContact?.let {
-            LabelLineValue(
-                label = "Guarantor Contact",
-                value = it
-            )
-        }
-        pendingApp.bookLossPOS?.let { LabelLineValue(label = "Book LossPOS", value = it) }
-        pendingApp.daysPassedaftersaleDPD?.let {
-            LabelLineValue(
-                label = "Days Passed After Sale DPD",
-                value = it
-            )
-        }
-        pendingApp.vehicleNo?.let { LabelLineValue(label = "Vehicle No", value = it) }
-        pendingApp.engineno?.let { LabelLineValue(label = "Engine no", value = it) }
-        pendingApp.chassisno?.let { LabelLineValue(label = "Chassis no", value = it) }
-        pendingApp.product?.let { LabelLineValue(label = "Product", value = it) }
-        pendingApp.productCode?.let { LabelLineValue(label = "Product Code", value = it) }
-        pendingApp.productName?.let { LabelLineValue(label = "Product Name", value = it) }
-        pendingApp.classVehicleType?.let { LabelLineValue(label = "Class VehicleType", value = it) }
-        pendingApp.loanDate?.let { LabelLineValue(label = "Loan Date", value = it) }
-        pendingApp.costafterRepo?.let { LabelLineValue(label = "Cost after Repo", value = it) }
-        pendingApp.sale?.let { LabelLineValue(label = "Sale", value = it) }
-        pendingApp.saleDate?.let { LabelLineValue(label = "Sale Date", value = it) }
-        pendingApp.installmentsNo?.let { LabelLineValue(label = "Installments No", value = it) }
-        pendingApp.installmentsAdv?.let { LabelLineValue(label = "Installments Adv", value = it) }
-        pendingApp.installmentsMonths?.let {
-            LabelLineValue(
-                label = "Installments Months",
-                value = it
-            )
-        }
-        pendingApp.scheme?.let { LabelLineValue(label = "Scheme", value = it) }
-        pendingApp.dateOfFirstInstallment?.let {
-            LabelLineValue(
-                label = "Date Of First Installment",
-                value = it
-            )
-        }
-        pendingApp.dateOfLastInstallment?.let {
-            LabelLineValue(
-                label = "Date Of Last Installment",
-                value = it
-            )
-        }
-        pendingApp.amtRecthroughEMI?.let {
-            LabelLineValue(
-                label = "Amt Recthrough EMI",
-                value = it
-            )
-        }
-        pendingApp.posAfterSale?.let { LabelLineValue(label = "Pos After Sale", value = it) }
-        pendingApp.posBeforeSale?.let { LabelLineValue(label = "Pos Before Sale", value = it) }
-        pendingApp.acCloseDate?.let { LabelLineValue(label = "Ac Close Date", value = it) }
-        pendingApp.loanRate?.let { LabelLineValue(label = "Loan Rate", value = it) }
-        pendingApp.repaymentMode?.let { LabelLineValue(label = "Repayment Mode", value = it) }
-        pendingApp.referenceName?.let { LabelLineValue(label = "Reference Name", value = it) }
-        pendingApp.contactNo?.let { LabelLineValue(label = "Contact No", value = it) }
-        pendingApp.lanNo?.let { LabelLineValue(label = "LanNo", value = it) }
-        pendingApp.cbsLoanNo?.let { LabelLineValue(label = "Cbs LoanNo", value = it) }
-        pendingApp.customerId?.let { LabelLineValue(label = "CustomerId", value = it) }
-        pendingApp.stateName?.let { LabelLineValue(label = "StateName", value = it) }
-        pendingApp.branch?.let { LabelLineValue(label = "Branch", value = it) }
-        pendingApp.hubName?.let { LabelLineValue(label = "HubName", value = it) }
-        pendingApp.fatherName?.let { LabelLineValue(label = "Father Name", value = it) }
-        LabelLineValue(label = "caseNo", value = pendingApp.caseNo)
-        pendingApp.loanDate?.let { LabelLineValue(label = "loanDate", value = it) }
-        LabelLineValue(label = "loanAmount", value = pendingApp.loanAmount)
+private fun LoanDetailsScreen(
+    modifier: Modifier,
+    loanApp: PendingApp
+) {
+    // Prepare all key/value pairs
+    val generalDetails = listOf(
+        "Case Type" to loanApp.caseType,
+        "Loan Amount" to loanApp.loanAmount,
+        "Borrower Name" to loanApp.borrowerName,
+        "Borrower Address" to loanApp.borrowerAddress,
+        "Borrower Contact" to loanApp.borrowerContactNo,
+        "Co-borrower Name" to loanApp.coBorrowerName,
+        "Co-borrower Address" to loanApp.coBorrowerAddress,
+        "Co-borrower Contact" to loanApp.coBorrowerContactNo,
+        "Guarantor Name" to loanApp.guarantorName,
+        "Guarantor Address" to loanApp.guarantorBorrowerAddress,
+        "Guarantor Contact" to loanApp.guarantorBorrowerContact
+    ).filter { it.second != null }
 
+    // Prepare all key/value pairs
+    val loanDetails = listOf(
+        "Bank Loss POS" to loanApp.bookLossPOS,
+        "Days passed after sale DPD" to loanApp.daysPassedaftersaleDPD,
+        "Loan Date" to loanApp.loanDate,
+        "Cost after Repo" to loanApp.costafterRepo,
+        "Sale" to loanApp.sale,
+        "Sale Date" to loanApp.saleDate,
+        "Installments No" to loanApp.installmentsNo,
+        "Installments Adv" to loanApp.installmentsAdv,
+        "Installments Months" to loanApp.installmentsMonths,
+        "Scheme" to loanApp.scheme,
+        "Date of first installment" to loanApp.dateOfFirstInstallment,
+        "Date of last installment" to loanApp.dateOfLastInstallment,
+        "Amt Recthrough EMI" to loanApp.amtRecthroughEMI,
+        "POS After Sale" to loanApp.posAfterSale,
+        "POS Before Sale" to loanApp.posBeforeSale,
+        "Ac Close Date" to loanApp.acCloseDate,
+        "Loan Rate" to loanApp.loanRate,
+        "Repayment Mode" to loanApp.repaymentMode,
+        "Reference Name" to loanApp.referenceName,
+        "Contact No" to loanApp.contactNo,
+        "LAN No" to loanApp.lanNo,
+        "CBS Loan No" to loanApp.cbsLoanNo,
+        "Customer Id" to loanApp.customerId,
+        "Branch" to loanApp.branch,
+        "Father Name" to loanApp.fatherName,
+    ).filter { it.second != null }
+
+    val vehicleDetails = listOf(
+        "Vehicle No" to loanApp.vehicleNo,
+        "Engine No" to loanApp.engineno,
+        "Chassis No" to loanApp.chassisno,
+        "Product" to loanApp.product,
+        "Product Code" to loanApp.productCode,
+        "Product Name" to loanApp.productName
+    ).filter { it.second != null }
+
+    LazyColumn(
+        modifier = modifier.padding(horizontal = 16.dp),
+        contentPadding = PaddingValues(vertical = 8.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        if (generalDetails.isNotEmpty()) {
+            item {
+                SectionCard("General Details") {
+                    generalDetails.forEach { (label, value) ->
+                        LabelLineValue(label = label, value = value!!)
+                    }
+                }
+            }
+        }
+
+        if (loanDetails.isNotEmpty()) {
+            item {
+                SectionCard("Loan Details") {
+                    loanDetails.forEach { (label, value) ->
+                        LabelLineValue(label = label, value = value!!)
+                    }
+                }
+            }
+        }
+
+        if (vehicleDetails.isNotEmpty()) {
+            item {
+                SectionCard("Vehicle Details") {
+                    vehicleDetails.forEach { (label, value) ->
+                        LabelLineValue(label = label, value = value!!)
+                    }
+                }
+            }
+        }
     }
 }
 
 @Preview(showBackground = true)
 @Composable
-private fun GreetingPreview() {
-    MyApplicationTheme {
+private fun PreviewLoanDetails() {
+    LoanAppTheme {
         LoanDetailsScreen(
-            Modifier.fillMaxSize(), PendingApp(
-                lanNo = "5454545454",
+            modifier = Modifier.fillMaxSize(),
+            loanApp = PendingApp(
+                lanNo = "12345",
                 loanAmount = "500000",
-                borrowerName = "djfdifjdf nfdijfd",
-                loanDetailId = 0,
-                caseType = null,
-                caseNo = "775656565",
-                cbsLoanNo = null,
-                customerId = null,
-                stateName = null,
-                branch = null,
-                hubName = null,
-                fatherName = null,
-                borrowerAddress = "Data Infosys Ltd, Nr. FlyovervDurgapura, Jaipur",
-                borrowerContactNo = null,
-                coBorrowerName = null,
-                coBorrowerAddress = null,
-                coBorrowerContactNo = null,
-                guarantorName = null,
-                guarantorBorrowerAddress = null,
-                guarantorBorrowerContact = null,
+                borrowerName = "John Doe",
+                loanDetailId = 1,
+                caseType = "WHEELS-LOSS",
+                caseNo = "LVWAR01314-150291591",
+                borrowerAddress = "Sample Address",
+                borrowerContactNo = "9999999999",
+                coBorrowerName = "Jane Doe",
+                coBorrowerAddress = "Sample Co-Address",
+                coBorrowerContactNo = "8888888888",
+                guarantorName = "Guarantor",
+                guarantorBorrowerAddress = "Sample G Addr",
+                guarantorBorrowerContact = "7777777777",
                 bookLossPOS = null,
                 daysPassedaftersaleDPD = null,
-                vehicleNo = null,
-                engineno = null,
-                chassisno = null,
-                product = null,
-                productCode = null,
-                productName = null,
+                vehicleNo = "MH32Q4738",
+                engineno = "GHE1K64440",
+                chassisno = "MA1ZN2GHKE1K79927",
+                product = "MAHINDRA - BOLERO PICK UP",
+                productCode = "MBPU123",
+                productName = "Bolero",
                 classVehicleType = null,
                 loanDate = null,
                 costafterRepo = null,
@@ -267,7 +298,13 @@ private fun GreetingPreview() {
                 repaymentMode = null,
                 referenceName = null,
                 contactNo = null,
-                currentLitigation = "Current Litigation"
+                currentLitigation = null,
+                cbsLoanNo = TODO(),
+                customerId = TODO(),
+                stateName = TODO(),
+                branch = TODO(),
+                hubName = TODO(),
+                fatherName = TODO()
             )
         )
     }

@@ -58,7 +58,7 @@ import com.aubank.loanapp.data.Litigation
 import com.aubank.loanapp.data.MasterData
 import com.aubank.loanapp.data.PendingApp
 import com.aubank.loanapp.data.VisitDone
-import com.aubank.loanapp.ui.theme.MyApplicationTheme
+import com.aubank.loanapp.ui.theme.LoanAppTheme
 import com.aubank.loanapp.utils.DateTimeFormatter
 import com.aubank.loanapp.viewmodel.FeedbackFollowupViewModel
 import com.aubank.loanapp.viewmodel.NavigationEvent
@@ -117,8 +117,8 @@ class FeedbackFollowupActivity : ComponentActivity(), LocationListener {
 
         enableEdgeToEdge()
         setContent {
-            MyApplicationTheme {
-                MyApplicationTheme {
+            LoanAppTheme {
+                LoanAppTheme {
                     (application as LoanApplication).getMasterData()?.let {
                         FeedbackFollowupScreen(
                             app = app,
@@ -263,10 +263,6 @@ private fun FeedbackFollowupScreen(
     Scaffold(topBar = {
         TopAppBar(
             title = { Text(app.caseNo) },
-            colors = topAppBarColors(
-                containerColor = Color.Blue, // Set your desired background color here
-                titleContentColor = Color.White,
-            ),
             navigationIcon = {
                 IconButton(onClick = { viewModel.navigateBack() }) {
                     Icon(

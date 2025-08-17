@@ -46,6 +46,7 @@ import androidx.core.content.FileProvider
 import com.aubank.loanapp.api.UserRepository
 import com.aubank.loanapp.components.ApiProgressBar
 import com.aubank.loanapp.components.DropdownSpinner
+import com.aubank.loanapp.components.EnhancedTopAppBar
 import com.aubank.loanapp.components.FieldRow
 import com.aubank.loanapp.components.LabelLineValue
 import com.aubank.loanapp.data.ApprovalRequest
@@ -53,7 +54,7 @@ import com.aubank.loanapp.data.Constants
 import com.aubank.loanapp.data.Litigation
 import com.aubank.loanapp.data.MasterData
 import com.aubank.loanapp.data.PendingApprovalFeedbackData
-import com.aubank.loanapp.ui.theme.MyApplicationTheme
+import com.aubank.loanapp.ui.theme.LoanAppTheme
 import com.aubank.loanapp.viewmodel.FeedbackApprovalFormViewModel
 import com.aubank.loanapp.viewmodel.NavigationEvent
 import com.google.android.gms.location.FusedLocationProviderClient
@@ -112,7 +113,7 @@ class FeedbackApprovalFormActivity : ComponentActivity() {
         val masterData = (application as LoanApplication).getMasterData()!!
         viewModel.setValuesFromMasterData(masterData)
         setContent {
-            MyApplicationTheme {
+            LoanAppTheme {
                 FeedbackApprovalForm(
                     modifier = Modifier.fillMaxSize(),
                     app = viewModel.feedbackData.value?.pendingApprovalFeedbackData!!,
@@ -224,19 +225,10 @@ private fun FeedbackApprovalForm(app: PendingApprovalFeedbackData,
                                  masterData: MasterData,
                                  loading: Boolean) {
     Scaffold(topBar = {
-        TopAppBar(
-            title = { Text(app.loanNo ?: "") },
-            colors = topAppBarColors(
-                containerColor = Color.Blue, // Set your desired background color here
-                titleContentColor = Color.White,
-            ),
-            navigationIcon = {
-                IconButton(onClick = { viewModel.navigateBack() }) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "Back"
-                    )
-                }
+        EnhancedTopAppBar (
+            titleText = app.loanNo ?: "",
+            onNavigateBack = {
+                viewModel.navigateBack()
             }
         )
     }, content = {
@@ -291,8 +283,6 @@ private fun ApprovalFeedbackForm(
                 pendingApprovalFeedbackData.visitDate?.let { FieldRow(label = "Visit Date", value = it) }
                 Spacer(modifier = Modifier.height(16.dp))
                 LabelLineValue(label = "Visit Type", value = pendingApprovalFeedbackData.visitType ?: "New Visit")
-                Spacer(modifier = Modifier.height(16.dp))
-                feedbackData.visitDoneValue?.let { LabelLineValue(label = "Visit Done", value = it) }
                 Spacer(modifier = Modifier.height(16.dp))
                 feedbackData.visitDoneValue?.let { LabelLineValue(label = "Visit Done", value = it) }
                 Spacer(modifier = Modifier.height(16.dp))

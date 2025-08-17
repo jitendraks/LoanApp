@@ -9,12 +9,22 @@ plugins {
 android {
     namespace = "com.aubank.loanapp"
     compileSdk = 34
+
+    signingConfigs {
+        create("release") {
+            storeFile = file("keystore/jitendra.jks")
+            storePassword = "jitendra"
+            keyAlias = "jitendra"
+            keyPassword = "jitendra"
+        }
+    }
+
     defaultConfig {
         applicationId = "com.aubank.loanapp"
         minSdk = 26
         targetSdk = 34
-        versionCode = 1
-        versionName = "1.1"
+        versionCode = 2
+        versionName = "1.2"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -24,6 +34,7 @@ android {
 
     buildTypes {
         release {
+            signingConfig = signingConfigs.getByName("release")
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),

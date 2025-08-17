@@ -32,7 +32,7 @@ import androidx.compose.ui.unit.dp
 import com.aubank.loanapp.api.UserRepository
 import com.aubank.loanapp.components.ApiProgressBar
 import com.aubank.loanapp.data.Constants
-import com.aubank.loanapp.ui.theme.MyApplicationTheme
+import com.aubank.loanapp.ui.theme.LoanAppTheme
 import com.aubank.loanapp.viewmodel.LoginViewModel
 import com.aubank.loanapp.viewmodel.NavigationEvent
 
@@ -44,7 +44,7 @@ class LoginActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            MyApplicationTheme {
+            LoanAppTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
                     LoginScreen(
                         modifier = Modifier.padding(innerPadding),
@@ -91,7 +91,7 @@ class LoginActivity : ComponentActivity() {
 @Preview(showBackground = true)
 @Composable
 private fun GreetingPreview() {
-    MyApplicationTheme {
+    LoanAppTheme {
         LoginScreen(viewModel = LoginViewModel(UserRepository()))
     }
 }
